@@ -51,12 +51,15 @@
 - [-] 3. Create authentication and security middleware
 
 
-  - [ ] 3.1 Implement AuthService class
+  - [x] 3.1 Implement AuthService class
+
+
     - Write JWT token validation with jsonwebtoken library
     - Implement HTTP Basic authentication validation
     - Add dev-token and bypass mode support for development
     - _Requirements: 10.1, 10.2, 10.3, 10.4_
   
+
   - [ ] 3.2 Create security middleware functions
     - Implement authentication middleware with multiple auth types
     - Create CORS origin validation middleware

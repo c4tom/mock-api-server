@@ -4,3 +4,5 @@
 
 export * from './config';
 export * from './validation';
+export * from './auth';
+export * from './middleware';
