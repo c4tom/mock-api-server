@@ -258,19 +258,27 @@ export class RateLimitMiddleware {
         const connectionIp = req.connection?.remoteAddress;
         const socketIp = req.socket?.remoteAddress;
 
-        let ip = 'unknown';
-
         if (typeof forwardedFor === 'string') {
-            ip = forwardedFor;
-        } else if (typeof realIp === 'string') {
-            ip = realIp;
-        } else if (connectionIp) {
-            ip = connectionIp;
-        } else if (socketIp) {
-            ip = socketIp;
+            const parts = forwardedFor.split(',');
+            return (parts[0] || forwardedFor).trim();
         }
 
-        return ip.split(',')[0].trim();
+        if (typeof realIp === 'string') {
+            const parts = realIp.split(',');
+            return (parts[0] || realIp).trim();
+        }
+
+        if (typeof connectionIp === 'string') {
+            const parts = connectionIp.split(',');
+            return (parts[0] || connectionIp).trim();
+        }
+
+        if (typeof socketIp === 'string') {
+            const parts = socketIp.split(',');
+            return (parts[0] || socketIp).trim();
+        }
+
+        return 'unknown';
     }
 
     /**

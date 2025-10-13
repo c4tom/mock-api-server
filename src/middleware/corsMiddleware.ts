@@ -71,7 +71,8 @@ export class CorsMiddleware {
                 this.addCorsHeaders(res, 'null');
             }
 
-            return res.status(204).end();
+            res.status(204).end();
+            return;
         }
 
         next();
