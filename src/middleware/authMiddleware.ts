@@ -82,7 +82,9 @@ export class AuthMiddleware {
             }
 
             // Set user information on request
-            req.user = authResult.user;
+            if (authResult.user) {
+                req.user = authResult.user;
+            }
             next();
 
         } catch (error) {
@@ -109,7 +111,7 @@ export class AuthMiddleware {
     /**
      * Optional authentication middleware (doesn't fail if no auth provided)
      */
-    optionalAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    optionalAuth = async (req: AuthenticatedRequest, _res: Response, next: NextFunction): Promise<void> => {
         try {
             const authHeader = req.headers.authorization;
 
@@ -145,7 +147,7 @@ export class AuthMiddleware {
                     return next();
             }
 
-            if (authResult.valid) {
+            if (authResult.valid && authResult.user) {
                 req.user = authResult.user;
             }
 
@@ -179,6 +181,13 @@ export class AuthMiddleware {
                 suggestions
             }
         });
+    }
+
+    /**
+     * Get current authentication configuration info
+     */
+    getConfigInfo(): any {
+        return this.authService.getConfigInfo();
     }
 
     /**
