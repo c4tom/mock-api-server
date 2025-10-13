@@ -3,3 +3,4 @@
  */
 
 export { MockDataHandler } from './MockDataHandler';
+export { ProxyHandler } from './ProxyHandler';

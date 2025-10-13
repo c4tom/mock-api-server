@@ -3,20 +3,18 @@
  */
 
 import { Request, Response } from 'express';
+import { MockEndpoint, ValidationResult } from './config';
+
+// Re-export types from config to maintain compatibility
+export { MockEndpoint, ValidationResult };
 
 // Mock data set structure
 export interface MockDataSet {
-    endpoints: Record<string, MockEndpoint>;
+    endpoints: Record<string, ExtendedMockEndpoint>;
 }
 
-// Extended mock endpoint with runtime data
-export interface MockEndpoint {
-    method: string;
-    path: string;
-    response: any;
-    statusCode: number;
-    headers?: Record<string, string>;
-    delay?: number;
+// Extended mock endpoint with runtime data (extends the base MockEndpoint from config)
+export interface ExtendedMockEndpoint extends MockEndpoint {
     contentType?: string;
 }
 
@@ -53,12 +51,7 @@ export interface IMockDataHandler {
     reloadMockData(): Promise<void>;
 }
 
-// Validation result
-export interface ValidationResult {
-    valid: boolean;
-    error?: string;
-    details?: any;
-}
+
 
 // Request context for mock handling
 export interface MockRequestContext {
@@ -74,5 +67,5 @@ export interface ResponseFormatOptions {
     contentType: 'json' | 'xml' | 'text';
     data: any;
     statusCode: number;
-    headers?: Record<string, string>;
+    headers: Record<string, string>;
 }

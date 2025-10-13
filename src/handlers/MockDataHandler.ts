@@ -3,14 +3,15 @@
  */
 
 import { Request, Response } from 'express';
-import { readdir, readFile, existsSync } from 'fs/promises';
+import { readdir, readFile } from 'fs/promises';
+import { existsSync } from 'fs';
 import { join, extname } from 'path';
 import {
     IMockDataHandler,
     MockDataSet,
     MockEndpoint,
+    ExtendedMockEndpoint,
     MockDataFile,
-    MockEndpointConfig,
     MockDataStorage,
     MockRequestContext,
     ResponseFormatOptions,
@@ -82,7 +83,7 @@ export class MockDataHandler implements IMockDataHandler {
                         ...endpoint,
                         delay: endpoint.delay ?? this.config.defaultDelay,
                         contentType: this.determineContentType(endpoint.headers)
-                    };
+                    } as ExtendedMockEndpoint;
                 }
             }
 
@@ -179,7 +180,7 @@ export class MockDataHandler implements IMockDataHandler {
         }
 
         // Try pattern matching for dynamic routes
-        for (const [key, endpoint] of Object.entries(this.mockData.endpoints)) {
+        for (const [, endpoint] of Object.entries(this.mockData.endpoints)) {
             if (this.matchesPattern(endpoint, context)) {
                 return endpoint;
             }
@@ -191,7 +192,7 @@ export class MockDataHandler implements IMockDataHandler {
     /**
      * Check if endpoint pattern matches request
      */
-    private matchesPattern(endpoint: MockEndpoint, context: MockRequestContext): boolean {
+    private matchesPattern(endpoint: ExtendedMockEndpoint, context: MockRequestContext): boolean {
         if (endpoint.method !== context.method) {
             return false;
         }
@@ -209,7 +210,7 @@ export class MockDataHandler implements IMockDataHandler {
             const requestPart = requestParts[i];
 
             // Skip parameter parts (starting with :)
-            if (endpointPart.startsWith(':')) {
+            if (endpointPart && endpointPart.startsWith(':')) {
                 continue;
             }
 
@@ -226,7 +227,7 @@ export class MockDataHandler implements IMockDataHandler {
      */
     private async handleCrudOperation(
         context: MockRequestContext,
-        endpoint: MockEndpoint,
+        endpoint: ExtendedMockEndpoint,
         res: Response
     ): Promise<void> {
         const storageKey = this.getStorageKey(endpoint.path);
@@ -252,7 +253,7 @@ export class MockDataHandler implements IMockDataHandler {
     private async handleCreate(
         storageKey: string,
         context: MockRequestContext,
-        endpoint: MockEndpoint,
+        endpoint: ExtendedMockEndpoint,
         res: Response
     ): Promise<void> {
         if (!this.storage[storageKey]) {
@@ -271,7 +272,7 @@ export class MockDataHandler implements IMockDataHandler {
             contentType: endpoint.contentType as any || 'json',
             data: newItem,
             statusCode: 201,
-            headers: endpoint.headers
+            headers: endpoint.headers || {}
         };
 
         this.sendFormattedResponse(res, responseOptions);
@@ -283,7 +284,7 @@ export class MockDataHandler implements IMockDataHandler {
     private async handleUpdate(
         storageKey: string,
         context: MockRequestContext,
-        endpoint: MockEndpoint,
+        endpoint: ExtendedMockEndpoint,
         res: Response
     ): Promise<void> {
         if (!this.storage[storageKey]) {
@@ -292,7 +293,8 @@ export class MockDataHandler implements IMockDataHandler {
 
         // Extract ID from path (assuming /resource/:id pattern)
         const pathParts = context.path.split('/');
-        const id = parseInt(pathParts[pathParts.length - 1], 10);
+        const idStr = pathParts[pathParts.length - 1];
+        const id = parseInt(idStr || '', 10);
 
         if (isNaN(id)) {
             res.status(400).json({
@@ -328,7 +330,7 @@ export class MockDataHandler implements IMockDataHandler {
             contentType: endpoint.contentType as any || 'json',
             data: updatedItem,
             statusCode: 200,
-            headers: endpoint.headers
+            headers: endpoint.headers || {}
         };
 
         this.sendFormattedResponse(res, responseOptions);
@@ -340,7 +342,7 @@ export class MockDataHandler implements IMockDataHandler {
     private async handleDelete(
         storageKey: string,
         context: MockRequestContext,
-        endpoint: MockEndpoint,
+        _endpoint: ExtendedMockEndpoint,
         res: Response
     ): Promise<void> {
         if (!this.storage[storageKey]) {
@@ -349,7 +351,8 @@ export class MockDataHandler implements IMockDataHandler {
 
         // Extract ID from path
         const pathParts = context.path.split('/');
-        const id = parseInt(pathParts[pathParts.length - 1], 10);
+        const idStr = pathParts[pathParts.length - 1];
+        const id = parseInt(idStr || '', 10);
 
         if (isNaN(id)) {
             res.status(400).json({
@@ -381,7 +384,7 @@ export class MockDataHandler implements IMockDataHandler {
     /**
      * Send regular mock response
      */
-    private async sendMockResponse(endpoint: MockEndpoint, res: Response): Promise<void> {
+    private async sendMockResponse(endpoint: ExtendedMockEndpoint, res: Response): Promise<void> {
         let responseData = endpoint.response;
 
         // If response is a function, call it to get dynamic data
@@ -401,7 +404,7 @@ export class MockDataHandler implements IMockDataHandler {
             contentType: endpoint.contentType as any || 'json',
             data: responseData,
             statusCode: endpoint.statusCode || 200,
-            headers: endpoint.headers
+            headers: endpoint.headers || {}
         };
 
         this.sendFormattedResponse(res, responseOptions);
@@ -482,10 +485,10 @@ export class MockDataHandler implements IMockDataHandler {
                         path: endpointConfig.path,
                         response: endpointConfig.response,
                         statusCode: endpointConfig.statusCode || 200,
-                        headers: endpointConfig.headers,
+                        headers: endpointConfig.headers || {},
                         delay: endpointConfig.delay ?? this.config.defaultDelay,
                         contentType: endpointConfig.contentType || 'json'
-                    };
+                    } as ExtendedMockEndpoint;
                 }
             }
         } catch (error) {
@@ -516,7 +519,7 @@ export class MockDataHandler implements IMockDataHandler {
     /**
      * Validate individual endpoint
      */
-    private validateEndpoint(endpoint: MockEndpoint): ValidationResult {
+    private validateEndpoint(endpoint: ExtendedMockEndpoint): ValidationResult {
         if (!endpoint.method || typeof endpoint.method !== 'string') {
             return { valid: false, error: 'Endpoint must have a valid method' };
         }

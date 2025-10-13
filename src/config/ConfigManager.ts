@@ -7,6 +7,7 @@ import { existsSync, watchFile, unwatchFile } from 'fs';
 import { join } from 'path';
 import { AppConfig, DEFAULT_CONFIG, ValidationResult } from '../types/config';
 import { appConfigSchema, envSchema } from '../types/validation';
+import { ProxyConfigParser } from '../utils';
 
 export class ConfigManager {
   private currentConfig: AppConfig;
@@ -26,7 +27,7 @@ export class ConfigManager {
     try {
       // Determine config file path
       this.configPath = this.getConfigFilePath(environment);
-      
+
       // Load environment variables from file
       if (existsSync(this.configPath)) {
         config({ path: this.configPath });
@@ -61,7 +62,7 @@ export class ConfigManager {
     try {
       const environment = this.currentConfig.server.environment;
       await this.loadConfig(environment);
-      
+
       // Notify all registered callbacks
       this.reloadCallbacks.forEach(callback => {
         try {
@@ -87,7 +88,7 @@ export class ConfigManager {
    */
   validateConfig(config: Partial<AppConfig>): ValidationResult {
     const validation = appConfigSchema.validate(config, { abortEarly: false });
-    
+
     if (validation.error) {
       return {
         valid: false,
@@ -201,14 +202,7 @@ export class ConfigManager {
         defaultDelay: parseInt(env.DEFAULT_DELAY, 10),
         enableCrud: env.ENABLE_CRUD,
       },
-      proxy: {
-        enabled: env.PROXY_ENABLED,
-        routes: this.parseProxyRoutes(env.PROXY_ROUTES),
-        timeout: parseInt(env.PROXY_TIMEOUT, 10),
-        retries: parseInt(env.PROXY_RETRIES, 10),
-        allowedDomains: this.parseStringArray(env.PROXY_ALLOWED_DOMAINS),
-        blockedDomains: this.parseStringArray(env.PROXY_BLOCKED_DOMAINS),
-      },
+      proxy: ProxyConfigParser.buildProxyConfig(env),
       logging: {
         level: env.LOG_LEVEL,
         format: env.LOG_FORMAT,
@@ -227,34 +221,7 @@ export class ConfigManager {
     return value.split(',').map(item => item.trim()).filter(item => item.length > 0);
   }
 
-  /**
-   * Parse proxy routes from environment variable
-   * Format: "name1:url1,name2:url2"
-   */
-  private parseProxyRoutes(routesString: string): Record<string, any> {
-    const routes: Record<string, any> = {};
-    
-    if (!routesString || routesString.trim() === '') {
-      return routes;
-    }
 
-    const routePairs = routesString.split(',');
-    for (const pair of routePairs) {
-      const colonIndex = pair.indexOf(':');
-      if (colonIndex > 0) {
-        const name = pair.substring(0, colonIndex).trim();
-        const targetUrl = pair.substring(colonIndex + 1).trim();
-        if (name && targetUrl) {
-          routes[name] = {
-            name,
-            targetUrl,
-          };
-        }
-      }
-    }
-
-    return routes;
-  }
 
   /**
    * Create example configuration files if they don't exist
@@ -289,6 +256,22 @@ PROXY_RETRIES=3
 PROXY_ROUTES=jsonplaceholder:https://jsonplaceholder.typicode.com,github:https://api.github.com
 PROXY_ALLOWED_DOMAINS=jsonplaceholder.typicode.com,api.github.com,httpbin.org
 PROXY_BLOCKED_DOMAINS=
+
+# Proxy Authentication Examples (uncomment and configure as needed)
+# PROXY_AUTH_GITHUB_TYPE=bearer
+# PROXY_AUTH_GITHUB_TOKEN=your-github-token
+# PROXY_AUTH_API1_TYPE=basic
+# PROXY_AUTH_API1_USERNAME=user
+# PROXY_AUTH_API1_PASSWORD=pass
+# PROXY_AUTH_API2_TYPE=apikey
+# PROXY_AUTH_API2_HEADER=X-API-Key
+# PROXY_AUTH_API2_VALUE=your-api-key
+
+# Proxy Headers Examples (uncomment and configure as needed)
+# PROXY_HEADERS_GITHUB=User-Agent:MyApp/1.0,Accept:application/vnd.github.v3+json
+
+# Proxy Path Rewrite Examples (uncomment and configure as needed)
+# PROXY_REWRITE_API1=^/api/v1:/api/v2,^/old:/new
 
 # Logging
 LOG_LEVEL=debug
@@ -328,6 +311,17 @@ PROXY_ROUTES=api1:https://api.production.com,api2:https://service.production.com
 PROXY_ALLOWED_DOMAINS=api.production.com,service.production.com
 PROXY_BLOCKED_DOMAINS=malicious.com,spam.com
 
+# Proxy Authentication (configure as needed)
+PROXY_AUTH_API1_TYPE=bearer
+PROXY_AUTH_API1_TOKEN=your-production-token
+PROXY_AUTH_API2_TYPE=apikey
+PROXY_AUTH_API2_HEADER=X-API-Key
+PROXY_AUTH_API2_VALUE=your-production-api-key
+
+# Proxy Headers (configure as needed)
+PROXY_HEADERS_API1=User-Agent:ProductionApp/1.0
+PROXY_HEADERS_API2=Accept:application/json,Content-Type:application/json
+
 # Logging
 LOG_LEVEL=info
 LOG_FORMAT=json
@@ -339,11 +333,11 @@ ADMIN_ENABLED=false
 
     // Write example files if they don't exist
     const fs = await import('fs/promises');
-    
+
     if (!existsSync('.env.local')) {
       await fs.writeFile('.env.local', developmentConfig);
     }
-    
+
     if (!existsSync('.env.production')) {
       await fs.writeFile('.env.production', productionConfig);
     }
