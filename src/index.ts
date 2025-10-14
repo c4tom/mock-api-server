@@ -3,11 +3,13 @@ import dotenv from 'dotenv';
 import winston from 'winston';
 import { ConfigManager } from './config';
 import {
-  SecurityMiddleware
+  SecurityMiddleware,
+  createTransformationMiddleware
 } from './middleware';
 import { AdminHandler, MockDataHandler, ProxyHandler } from './handlers';
 import { LoggingService } from './services';
 import { AppConfig } from './types';
+import { TransformationConfig } from './types/transformation';
 
 // Load environment variables
 dotenv.config();
@@ -43,6 +45,7 @@ let adminHandler: AdminHandler;
 let mockDataHandler: MockDataHandler;
 let proxyHandler: ProxyHandler;
 let securityMiddleware: SecurityMiddleware;
+let transformationMiddleware: ReturnType<typeof createTransformationMiddleware>;
 let server: any;
 
 /**
@@ -125,6 +128,9 @@ async function initializeApp() {
     );
     securityMiddleware = new SecurityMiddleware(config.security);
 
+    // Initialize transformation middleware
+    transformationMiddleware = createTransformationMiddleware(loadTransformations());
+
     // Set proxy handler reference in admin handler for cache management
     adminHandler.setProxyHandler(proxyHandler);
 
@@ -135,11 +141,45 @@ async function initializeApp() {
       authEnabled: config.security.authentication.enabled,
       authType: config.security.authentication.type,
       proxyEnabled: config.proxy.enabled,
-      adminEnabled: config.server.adminEnabled
+      adminEnabled: config.server.adminEnabled,
+      transformationsLoaded: transformationMiddleware.getTransformations().length
     });
   } catch (error) {
     logger.error('Failed to initialize application', { error });
     throw error;
+  }
+}
+
+/**
+ * Load transformation configurations
+ * Attempts to load from config/transformations.ts or returns empty array
+ */
+function loadTransformations(): TransformationConfig[] {
+  try {
+    // Try to load transformations from config file
+    const transformationsPath = './config/transformations';
+    const transformations = require(transformationsPath);
+
+    if (transformations.default) {
+      logger.info('Loaded transformations from config file', {
+        count: transformations.default.length
+      });
+      return transformations.default;
+    }
+
+    if (Array.isArray(transformations)) {
+      logger.info('Loaded transformations from config file', {
+        count: transformations.length
+      });
+      return transformations;
+    }
+
+    logger.info('No transformations found in config file');
+    return [];
+  } catch (error) {
+    // Config file doesn't exist or has errors - that's okay
+    logger.debug('No transformation config file found, using empty transformations');
+    return [];
   }
 }
 
@@ -408,6 +448,9 @@ function setupMiddleware() {
   app.use(securityMiddleware.checkBlockedIPs);
   app.use(securityMiddleware.applyRateLimit);
 
+  // Transformation middleware (after security, before routes)
+  app.use(transformationMiddleware.middleware());
+
   // Authentication middleware will be applied per route as needed
   // This will be applied per route as needed
 }
@@ -489,6 +532,103 @@ function setupRoutes() {
     app.get('/admin/cache/stats', adminAuth, adminHandler.getCacheStats);
     app.post('/admin/cache/clear', adminAuth, adminHandler.clearCache);
     app.post('/admin/cache/invalidate/:routeName', adminAuth, adminHandler.invalidateCacheByRoute);
+
+    // Transformation management endpoints
+    app.get('/admin/transformations', adminAuth, (req: Request, res: Response) => {
+      const transformations = transformationMiddleware.getTransformations();
+      res.json({
+        success: true,
+        data: {
+          transformations,
+          count: transformations.length
+        },
+        meta: {
+          timestamp: new Date().toISOString(),
+          requestId: (req as any).requestId
+        }
+      });
+    });
+
+    app.post('/admin/transformations', adminAuth, (req: Request, res: Response) => {
+      try {
+        const transformation = req.body as TransformationConfig;
+
+        // Basic validation
+        if (!transformation.path) {
+          res.status(400).json({
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: 'Transformation path is required',
+              timestamp: new Date().toISOString()
+            }
+          });
+          return;
+        }
+
+        transformationMiddleware.addTransformation(transformation);
+
+        logger.info('Transformation added', {
+          path: transformation.path,
+          method: transformation.method
+        });
+
+        res.json({
+          success: true,
+          message: 'Transformation added successfully',
+          data: transformation,
+          meta: {
+            timestamp: new Date().toISOString(),
+            requestId: (req as any).requestId
+          }
+        });
+      } catch (error) {
+        res.status(400).json({
+          error: {
+            code: 'TRANSFORMATION_ERROR',
+            message: error instanceof Error ? error.message : 'Failed to add transformation',
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
+    });
+
+    app.delete('/admin/transformations', adminAuth, (req: Request, res: Response) => {
+      try {
+        const { path, method } = req.body;
+
+        if (!path) {
+          res.status(400).json({
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: 'Transformation path is required',
+              timestamp: new Date().toISOString()
+            }
+          });
+          return;
+        }
+
+        transformationMiddleware.removeTransformation(path, method);
+
+        logger.info('Transformation removed', { path, method });
+
+        res.json({
+          success: true,
+          message: 'Transformation removed successfully',
+          meta: {
+            timestamp: new Date().toISOString(),
+            requestId: (req as any).requestId
+          }
+        });
+      } catch (error) {
+        res.status(400).json({
+          error: {
+            code: 'TRANSFORMATION_ERROR',
+            message: error instanceof Error ? error.message : 'Failed to remove transformation',
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
+    });
   }
 
   // Mock data routes (with auth if enabled)

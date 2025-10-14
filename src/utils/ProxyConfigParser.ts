@@ -2,7 +2,7 @@
  * ProxyConfigParser - Utility for parsing proxy configuration from environment variables
  */
 
-import { ProxyRoute, ProxyAuth, ProxyConfig } from '../types';
+import { ProxyRoute, ProxyAuth, ProxyConfig, CacheConfig } from '../types';
 
 export class ProxyConfigParser {
     /**
@@ -181,12 +181,17 @@ export class ProxyConfigParser {
             }
         });
 
-        return {
+        const config: CacheConfig = {
             enabled: true,
             defaultTTL,
-            maxSize,
-            routeTTLs: Object.keys(routeTTLs).length > 0 ? routeTTLs : undefined
+            maxSize
         };
+
+        if (Object.keys(routeTTLs).length > 0) {
+            config.routeTTLs = routeTTLs;
+        }
+
+        return config;
     }
 
     /**
@@ -227,15 +232,20 @@ export class ProxyConfigParser {
         // Parse cache configuration
         const cache = this.parseCacheConfig(env);
 
-        return {
+        const config: ProxyConfig = {
             enabled,
             routes,
             timeout,
             retries,
             allowedDomains: this.parseAllowedDomains(env['PROXY_ALLOWED_DOMAINS'] || ''),
-            blockedDomains: this.parseBlockedDomains(env['PROXY_BLOCKED_DOMAINS'] || ''),
-            cache
+            blockedDomains: this.parseBlockedDomains(env['PROXY_BLOCKED_DOMAINS'] || '')
         };
+
+        if (cache) {
+            config.cache = cache;
+        }
+
+        return config;
     }
 
     /**

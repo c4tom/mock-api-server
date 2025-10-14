@@ -8,6 +8,7 @@ Complete documentation for the Mock API Server.
 - [API Reference](./API_REFERENCE.md) - Complete API documentation
 - [Proxy Guide](./PROXY_GUIDE.md) - CORS proxy configuration and usage
 - [Cache Guide](./CACHE_GUIDE.md) - Response caching configuration and usage
+- [Transformation Guide](./TRANSFORMATION_GUIDE.md) - Request/response transformation
 - [Security Guide](./SECURITY_GUIDE.md) - Security configuration and best practices
 - [Troubleshooting](./TROUBLESHOOTING.md) - Common issues and solutions
 - [Configuration Examples](../CONFIG_EXAMPLES.md) - Example configurations for different environments
@@ -51,6 +52,16 @@ See [Cache Guide](./CACHE_GUIDE.md) for:
 - Performance optimization
 - Admin endpoints for cache management
 - Monitoring and statistics
+
+### Request/Response Transformation
+
+See [Transformation Guide](./TRANSFORMATION_GUIDE.md) for:
+- Field mapping and renaming
+- Field removal and addition
+- Custom transformation functions
+- Response wrapping
+- Path matching patterns
+- Transformation examples and use cases
 
 ### Security
 

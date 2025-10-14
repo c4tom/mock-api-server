@@ -6,6 +6,7 @@ A flexible backend server that can act as both a mock data server (similar to js
 
 - 🎭 **Mock Data Server**: Serve mock data through REST endpoints
 - 🔄 **CORS Proxy**: Bypass CORS limitations during development
+- 🔀 **Request/Response Transformation**: Transform data with field mapping, custom functions, and more
 - 🔐 **Flexible Authentication**: JWT, HTTP Basic, dev-token, or bypass modes
 - 🛡️ **Security Controls**: Rate limiting, origin validation, suspicious activity detection
 - 📝 **Request Logging**: Detailed logging with winston
@@ -364,6 +365,37 @@ AUTH_ENABLED=false
 - Check for syntax errors in .env file
 - Verify .env file is in the correct location
 - Check file permissions
+
+## Request/Response Transformation
+
+The server supports powerful data transformation capabilities. See the [Transformation Guide](docs/TRANSFORMATION_GUIDE.md) for detailed documentation.
+
+### Quick Example
+
+```typescript
+// Transform snake_case to camelCase
+{
+  path: '/api/users',
+  method: 'GET',
+  responseTransform: {
+    fieldMapping: {
+      user_id: 'userId',
+      first_name: 'firstName',
+      last_name: 'lastName'
+    }
+  }
+}
+```
+
+### Features
+
+- **Field Mapping**: Rename fields (e.g., snake_case ↔ camelCase)
+- **Field Removal**: Strip sensitive or unnecessary data
+- **Field Addition**: Inject metadata, timestamps, or computed values
+- **Custom Functions**: Apply complex transformation logic
+- **Response Wrapping**: Wrap responses in standard formats
+
+See [config/transformations.example.ts](config/transformations.example.ts) for more examples.
 
 ## API Reference
 
