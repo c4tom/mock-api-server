@@ -5,7 +5,8 @@ import { ConfigManager } from './config';
 import {
   SecurityMiddleware
 } from './middleware';
-import { MockDataHandler, ProxyHandler } from './handlers';
+import { AdminHandler, MockDataHandler, ProxyHandler } from './handlers';
+import { LoggingService } from './services';
 import { AppConfig } from './types';
 
 // Load environment variables
@@ -37,6 +38,8 @@ const app: Express = express();
 // Initialize configuration and handlers
 let config: AppConfig;
 let configManager: ConfigManager;
+let loggingService: LoggingService;
+let adminHandler: AdminHandler;
 let mockDataHandler: MockDataHandler;
 let proxyHandler: ProxyHandler;
 let securityMiddleware: SecurityMiddleware;
@@ -47,7 +50,9 @@ async function initializeApp() {
     configManager = new ConfigManager();
     config = await configManager.loadConfig(process.env['NODE_ENV'] || 'development');
 
-    // Initialize handlers
+    // Initialize services and handlers
+    loggingService = new LoggingService(config.logging);
+    adminHandler = new AdminHandler(configManager, config, loggingService);
     mockDataHandler = new MockDataHandler(config.mock);
     proxyHandler = new ProxyHandler(config.proxy);
     securityMiddleware = new SecurityMiddleware(config.security);
@@ -62,39 +67,7 @@ async function initializeApp() {
   }
 }
 
-// Request logging middleware
-const requestLogger = (req: Request, res: Response, next: NextFunction) => {
-  const startTime = Date.now();
-  const requestId = Math.random().toString(36).substring(7);
-
-  // Add request metadata
-  (req as any).requestId = requestId;
-  (req as any).startTime = startTime;
-
-  logger.info('Request received', {
-    requestId,
-    method: req.method,
-    url: req.url,
-    userAgent: req.get('User-Agent'),
-    origin: req.get('Origin'),
-    ip: req.ip
-  });
-
-  // Log response when finished
-  res.on('finish', () => {
-    const duration = Date.now() - startTime;
-    logger.info('Request completed', {
-      requestId,
-      method: req.method,
-      url: req.url,
-      statusCode: res.statusCode,
-      duration,
-      contentLength: res.get('Content-Length')
-    });
-  });
-
-  next();
-};
+// Request logging will be handled by LoggingService
 
 // Error handling middleware
 const errorHandler = (error: any, req: Request, res: Response, _next: NextFunction): void => {
@@ -182,7 +155,7 @@ function setupMiddleware() {
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // Request logging (first in chain)
-  app.use(requestLogger);
+  app.use(loggingService.requestLogger);
 
   // Security middleware chain
   app.use(securityMiddleware.handlePreflight);
@@ -214,75 +187,44 @@ function setupRoutes() {
       : (_req: Request, _res: Response, next: NextFunction) => next();
 
     // Get current configuration
-    app.get('/admin/config', adminAuth, (req: Request, res: Response) => {
-      const safeConfig = {
-        ...config,
-        security: {
-          ...config.security,
-          authentication: {
-            ...config.security.authentication,
-            jwtSecret: config.security.authentication.jwtSecret ? '[HIDDEN]' : undefined,
-            devToken: config.security.authentication.devToken ? '[HIDDEN]' : undefined,
-            basicCredentials: config.security.authentication.basicCredentials ? '[HIDDEN]' : undefined
-          }
-        }
-      };
-
-      res.json({
-        success: true,
-        data: safeConfig,
-        meta: {
-          timestamp: new Date().toISOString(),
-          requestId: (req as any).requestId
-        }
-      });
-    });
+    app.get('/admin/config', adminAuth, adminHandler.getConfig);
 
     // Reload configuration
     app.post('/admin/reload', adminAuth, async (req: Request, res: Response, next: NextFunction) => {
       try {
-        await configManager.reloadConfig();
-        config = configManager.getConfig();
+        await adminHandler.reloadConfig(req as any, res, next);
 
-        // Reinitialize handlers with new config
+        // Update config reference and reinitialize handlers with new config
+        config = configManager.getConfig();
+        loggingService.updateConfig(config.logging);
+        adminHandler.updateConfig(config);
+        adminHandler.updateLoggingService(loggingService);
         mockDataHandler = new MockDataHandler(config.mock);
         proxyHandler = new ProxyHandler(config.proxy);
         securityMiddleware = new SecurityMiddleware(config.security);
 
-        logger.info('Configuration reloaded successfully');
-
-        res.json({
-          success: true,
-          message: 'Configuration reloaded successfully',
-          meta: {
-            timestamp: new Date().toISOString(),
-            requestId: (req as any).requestId
-          }
-        });
+        logger.info('Configuration reloaded and handlers reinitialized successfully');
       } catch (error) {
         next(error);
       }
     });
 
     // Health check with detailed info
-    app.get('/admin/health', adminAuth, (req: Request, res: Response) => {
-      const memoryUsage = process.memoryUsage();
-      const uptime = process.uptime();
+    app.get('/admin/health', adminAuth, adminHandler.getHealthStatus);
+
+    // Server statistics
+    app.get('/admin/stats', adminAuth, adminHandler.getServerStats);
+
+    // Recent request logs
+    app.get('/admin/logs', adminAuth, (req: Request, res: Response) => {
+      const limit = parseInt(req.query['limit'] as string) || 50;
+      const recentRequests = loggingService.getRecentRequests(limit);
 
       res.json({
         success: true,
         data: {
-          status: 'healthy',
-          uptime: uptime,
-          memory: {
-            rss: `${Math.round(memoryUsage.rss / 1024 / 1024)}MB`,
-            heapTotal: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`,
-            heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`,
-            external: `${Math.round(memoryUsage.external / 1024 / 1024)}MB`
-          },
-          environment: config.server.environment,
-          nodeVersion: process.version,
-          platform: process.platform
+          requests: recentRequests,
+          count: recentRequests.length
         },
         meta: {
           timestamp: new Date().toISOString(),
@@ -361,6 +303,7 @@ function setupRoutes() {
   });
 
   // Error handling middleware (last in chain)
+  app.use(loggingService.errorLogger);
   app.use(errorHandler);
 }
 
@@ -406,6 +349,9 @@ process.on('SIGINT', () => {
   logger.info('SIGINT received, shutting down gracefully');
   process.exit(0);
 });
+
+// Set server start time for metrics
+process.env['SERVER_START_TIME'] = new Date().toISOString();
 
 // Start the server
 startServer();
