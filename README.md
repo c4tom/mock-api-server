@@ -8,6 +8,7 @@ A flexible backend server that can act as both a mock data server (similar to js
 - 🔄 **CORS Proxy**: Bypass CORS limitations during development
 - 🔀 **Request/Response Transformation**: Transform data with field mapping, custom functions, and more
 - 🔌 **WebSocket Support**: Real-time mock events and WebSocket proxying
+- 🔮 **GraphQL Support**: Built-in GraphQL endpoint with playground and proxy functionality
 - 🔐 **Flexible Authentication**: JWT, HTTP Basic, dev-token, or bypass modes
 - 🛡️ **Security Controls**: Rate limiting, origin validation, suspicious activity detection
 - 📝 **Request Logging**: Detailed logging with winston

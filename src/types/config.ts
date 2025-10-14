@@ -10,6 +10,7 @@ export interface AppConfig {
   proxy: ProxyConfig;
   logging: LoggingConfig;
   websocket?: WebSocketConfig;
+  graphql?: GraphQLConfig;
 }
 
 // Server configuration
@@ -131,6 +132,19 @@ export interface WebSocketProxyRoute {
   name: string;
   targetUrl: string;
   auth?: ProxyAuth;
+}
+
+// GraphQL configuration
+export interface GraphQLConfig {
+  enabled: boolean;
+  path: string;
+  schemaPath?: string;
+  mockData?: Record<string, any>;
+  proxyEnabled: boolean;
+  proxyEndpoint?: string;
+  proxyAuth?: ProxyAuth;
+  playground: boolean;
+  introspection: boolean;
 }
 
 // Validation result interface

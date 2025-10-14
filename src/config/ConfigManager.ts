@@ -219,6 +219,18 @@ export class ConfigManager {
           maxPayloadSize: env.WEBSOCKET_MAX_PAYLOAD ? parseInt(env.WEBSOCKET_MAX_PAYLOAD, 10) : undefined,
         }
       }),
+      ...(env.GRAPHQL_ENABLED && {
+        graphql: {
+          enabled: env.GRAPHQL_ENABLED,
+          path: env.GRAPHQL_PATH || '/graphql',
+          schemaPath: env.GRAPHQL_SCHEMA_PATH || undefined,
+          proxyEnabled: env.GRAPHQL_PROXY_ENABLED || false,
+          proxyEndpoint: env.GRAPHQL_PROXY_ENDPOINT || undefined,
+          proxyAuth: this.parseGraphQLProxyAuth(env),
+          playground: env.GRAPHQL_PLAYGROUND !== undefined ? env.GRAPHQL_PLAYGROUND : true,
+          introspection: env.GRAPHQL_INTROSPECTION !== undefined ? env.GRAPHQL_INTROSPECTION : true,
+        }
+      }),
     };
   }
 
@@ -272,6 +284,35 @@ export class ConfigManager {
       console.error('Failed to parse WebSocket proxy routes:', error);
       return {};
     }
+  }
+
+  /**
+   * Parse GraphQL proxy authentication from environment variables
+   */
+  private parseGraphQLProxyAuth(env: any): any {
+    if (!env.GRAPHQL_PROXY_AUTH_TYPE) {
+      return undefined;
+    }
+
+    const auth: any = {
+      type: env.GRAPHQL_PROXY_AUTH_TYPE,
+    };
+
+    switch (env.GRAPHQL_PROXY_AUTH_TYPE) {
+      case 'bearer':
+        auth.token = env.GRAPHQL_PROXY_AUTH_TOKEN;
+        break;
+      case 'basic':
+        auth.username = env.GRAPHQL_PROXY_AUTH_USERNAME;
+        auth.password = env.GRAPHQL_PROXY_AUTH_PASSWORD;
+        break;
+      case 'apikey':
+        auth.apiKeyHeader = env.GRAPHQL_PROXY_AUTH_HEADER;
+        auth.apiKeyValue = env.GRAPHQL_PROXY_AUTH_VALUE;
+        break;
+    }
+
+    return auth;
   }
 
 

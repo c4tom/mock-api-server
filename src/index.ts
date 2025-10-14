@@ -6,7 +6,7 @@ import {
   SecurityMiddleware,
   createTransformationMiddleware
 } from './middleware';
-import { AdminHandler, MockDataHandler, ProxyHandler, WebSocketHandler } from './handlers';
+import { AdminHandler, MockDataHandler, ProxyHandler, WebSocketHandler, GraphQLHandler } from './handlers';
 import { LoggingService } from './services';
 import { AppConfig } from './types';
 import { TransformationConfig } from './types/transformation';
@@ -47,6 +47,7 @@ let proxyHandler: ProxyHandler;
 let securityMiddleware: SecurityMiddleware;
 let transformationMiddleware: ReturnType<typeof createTransformationMiddleware>;
 let webSocketHandler: WebSocketHandler | undefined;
+let graphqlHandler: GraphQLHandler | undefined;
 let server: any;
 
 /**
@@ -135,6 +136,16 @@ async function initializeApp() {
     // Set proxy handler reference in admin handler for cache management
     adminHandler.setProxyHandler(proxyHandler);
 
+    // Initialize GraphQL handler if enabled
+    if (config.graphql?.enabled) {
+      graphqlHandler = new GraphQLHandler(config.graphql);
+      logger.info('GraphQL handler initialized', {
+        path: config.graphql.path,
+        playground: config.graphql.playground,
+        proxyEnabled: config.graphql.proxyEnabled,
+      });
+    }
+
     logger.info('Application initialized successfully', {
       environment: config.server.environment,
       port: config.server.port,
@@ -143,6 +154,7 @@ async function initializeApp() {
       authType: config.security.authentication.type,
       proxyEnabled: config.proxy.enabled,
       adminEnabled: config.server.adminEnabled,
+      graphqlEnabled: config.graphql?.enabled || false,
       transformationsLoaded: transformationMiddleware.getTransformations().length
     });
   } catch (error) {
@@ -499,6 +511,13 @@ function setupRoutes() {
         // Update proxy handler reference in admin handler
         adminHandler.setProxyHandler(proxyHandler);
 
+        // Reinitialize GraphQL handler if enabled
+        if (config.graphql?.enabled) {
+          graphqlHandler = new GraphQLHandler(config.graphql);
+        } else {
+          graphqlHandler = undefined;
+        }
+
         logger.info('Configuration reloaded and handlers reinitialized successfully');
       } catch (error) {
         next(error);
@@ -657,6 +676,36 @@ function setupRoutes() {
         });
       }
     });
+
+    // GraphQL statistics
+    app.get('/admin/graphql/stats', adminAuth, (req: Request, res: Response) => {
+      if (!graphqlHandler) {
+        res.status(404).json({
+          error: {
+            code: 'GRAPHQL_NOT_ENABLED',
+            message: 'GraphQL endpoint is not enabled',
+            timestamp: new Date().toISOString(),
+          }
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: {
+          enabled: true,
+          path: config.graphql?.path,
+          playground: config.graphql?.playground,
+          introspection: config.graphql?.introspection,
+          proxyEnabled: config.graphql?.proxyEnabled,
+          proxyEndpoint: config.graphql?.proxyEndpoint,
+        },
+        meta: {
+          timestamp: new Date().toISOString(),
+          requestId: (req as any).requestId
+        }
+      });
+    });
   }
 
   // Mock data routes (with auth if enabled)
@@ -698,6 +747,53 @@ function setupRoutes() {
         }
       });
     });
+  }
+
+  // GraphQL routes (with auth if enabled)
+  if (config.graphql?.enabled && graphqlHandler) {
+    const graphqlAuth = config.security.authentication.enabled
+      ? securityMiddleware.authenticateRequest
+      : (_req: Request, _res: Response, next: NextFunction) => next();
+
+    // GraphQL endpoint
+    app.all(config.graphql.path, graphqlAuth, async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        if (!graphqlHandler) {
+          res.status(404).json({
+            error: {
+              code: 'GRAPHQL_NOT_INITIALIZED',
+              message: 'GraphQL handler is not initialized',
+              timestamp: new Date().toISOString(),
+            }
+          });
+          return;
+        }
+        await graphqlHandler.handleRequest(req, res);
+      } catch (error) {
+        next(error);
+      }
+    });
+
+    // GraphQL proxy endpoint (if enabled)
+    if (config.graphql.proxyEnabled && config.graphql.proxyEndpoint) {
+      app.post(`${config.graphql.path}/proxy`, graphqlAuth, async (req: Request, res: Response, next: NextFunction) => {
+        try {
+          if (!graphqlHandler) {
+            res.status(404).json({
+              error: {
+                code: 'GRAPHQL_NOT_INITIALIZED',
+                message: 'GraphQL handler is not initialized',
+                timestamp: new Date().toISOString(),
+              }
+            });
+            return;
+          }
+          await graphqlHandler.handleProxyRequest(req, res);
+        } catch (error) {
+          next(error);
+        }
+      });
+    }
   }
 
   // OPTIONS handling for CORS preflight
@@ -819,6 +915,12 @@ async function startServer() {
       }
       if (config.websocket?.enabled) {
         console.log(`WebSocket URL: ws://${HOST}:${PORT}${config.websocket.path}`);
+      }
+      if (config.graphql?.enabled) {
+        console.log(`GraphQL endpoint: http://${HOST}:${PORT}${config.graphql.path}`);
+        if (config.graphql.playground) {
+          console.log(`GraphQL Playground: http://${HOST}:${PORT}${config.graphql.path}`);
+        }
       }
       console.log(`Environment: ${config.server.environment}`);
       console.log(`Process ID: ${process.pid}`);

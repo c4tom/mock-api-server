@@ -136,9 +136,67 @@ WEBSOCKET_HEARTBEAT_INTERVAL=30000
 WEBSOCKET_MAX_PAYLOAD=10485760
 ```
 
+## GraphQL Examples
+
+### Node.js GraphQL Client
+
+**File**: `graphql-client-example.js`
+
+A complete Node.js example showing how to:
+- Execute GraphQL queries
+- Use variables in queries
+- Perform mutations (create, update, delete)
+- Handle nested data
+- Implement error handling
+- Use authentication
+
+**Usage**:
+```bash
+# Make sure the server is running with GraphQL enabled
+npm run dev
+
+# In another terminal, run the example
+node examples/graphql-client-example.js
+```
+
+### GraphQL Query Examples
+
+**File**: `graphql-queries.md`
+
+A comprehensive collection of GraphQL query and mutation examples including:
+- Basic queries
+- Queries with variables
+- Nested queries
+- Mutations
+- Advanced patterns (fragments, aliases)
+- cURL examples
+- JavaScript examples
+
+### Basic GraphQL Configuration
+
+Add to your `.env.local`:
+
+```bash
+# Enable GraphQL
+GRAPHQL_ENABLED=true
+GRAPHQL_PATH=/graphql
+GRAPHQL_PLAYGROUND=true
+GRAPHQL_INTROSPECTION=true
+
+# Optional: Custom schema
+GRAPHQL_SCHEMA_PATH=./data/graphql-schema.graphql
+
+# Optional: Enable proxy
+GRAPHQL_PROXY_ENABLED=true
+GRAPHQL_PROXY_ENDPOINT=https://api.example.com/graphql
+GRAPHQL_PROXY_AUTH_TYPE=bearer
+GRAPHQL_PROXY_AUTH_TOKEN=your-token-here
+```
+
 ## More Examples
 
 For more detailed examples and use cases, see:
+- [GraphQL Guide](../docs/GRAPHQL_GUIDE.md) - Comprehensive GraphQL documentation
 - [WebSocket Guide](../docs/WEBSOCKET_GUIDE.md) - Comprehensive WebSocket documentation
 - [Transformation Guide](../docs/TRANSFORMATION_GUIDE.md) - Request/response transformation examples
 - [API Reference](../docs/API_REFERENCE.md) - Complete API documentation

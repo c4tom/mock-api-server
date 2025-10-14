@@ -113,6 +113,14 @@ const proxyRouteSchema = Joi.object({
   auth: proxyAuthSchema.optional(),
 });
 
+// Cache configuration schema
+const cacheConfigSchema = Joi.object({
+  enabled: Joi.boolean().required(),
+  defaultTTL: Joi.number().positive().required(),
+  maxSize: Joi.number().positive().required(),
+  routeTTLs: Joi.object().pattern(Joi.string(), Joi.number().positive()).optional(),
+});
+
 // Proxy configuration schema
 const proxySchema = Joi.object({
   enabled: Joi.boolean().required(),
@@ -121,6 +129,7 @@ const proxySchema = Joi.object({
   retries: Joi.number().min(0).max(10).required(),
   allowedDomains: Joi.array().items(Joi.string()).required(),
   blockedDomains: Joi.array().items(Joi.string()).required(),
+  cache: cacheConfigSchema.optional(),
 });
 
 // Logging configuration schema
@@ -141,7 +150,7 @@ const webSocketMockEventSchema = Joi.object({
 // WebSocket proxy route schema
 const webSocketProxyRouteSchema = Joi.object({
   name: Joi.string().required(),
-  targetUrl: Joi.string().uri().required(),
+  targetUrl: Joi.string().required(), // Allow any URL format including ws:// and wss://
   auth: proxyAuthSchema.optional(),
 });
 
@@ -156,6 +165,19 @@ const webSocketSchema = Joi.object({
   maxPayloadSize: Joi.number().positive().optional(),
 });
 
+// GraphQL configuration schema
+const graphQLSchema = Joi.object({
+  enabled: Joi.boolean().required(),
+  path: Joi.string().required(),
+  schemaPath: Joi.string().optional(),
+  mockData: Joi.object().optional(),
+  proxyEnabled: Joi.boolean().required(),
+  proxyEndpoint: Joi.string().uri().optional(),
+  proxyAuth: proxyAuthSchema.optional(),
+  playground: Joi.boolean().required(),
+  introspection: Joi.boolean().required(),
+});
+
 // Main application configuration schema
 export const appConfigSchema = Joi.object({
   server: serverSchema.required(),
@@ -164,7 +186,8 @@ export const appConfigSchema = Joi.object({
   proxy: proxySchema.required(),
   logging: loggingSchema.required(),
   websocket: webSocketSchema.optional(),
-});
+  graphql: graphQLSchema.optional(),
+}).unknown(true);
 
 // Environment variables schema for validation
 export const envSchema = Joi.object({
@@ -218,4 +241,24 @@ export const envSchema = Joi.object({
   WEBSOCKET_PROXY_ROUTES: Joi.string().allow('').default(''),
   WEBSOCKET_HEARTBEAT_INTERVAL: Joi.number().positive().optional(),
   WEBSOCKET_MAX_PAYLOAD: Joi.number().positive().optional(),
+
+  // GraphQL
+  GRAPHQL_ENABLED: Joi.boolean().default(false),
+  GRAPHQL_PATH: Joi.string().default('/graphql'),
+  GRAPHQL_SCHEMA_PATH: Joi.string().optional(),
+  GRAPHQL_PLAYGROUND: Joi.boolean().default(true),
+  GRAPHQL_INTROSPECTION: Joi.boolean().default(true),
+  GRAPHQL_PROXY_ENABLED: Joi.boolean().default(false),
+  GRAPHQL_PROXY_ENDPOINT: Joi.string().optional(),
+  GRAPHQL_PROXY_AUTH_TYPE: Joi.string().valid('bearer', 'basic', 'apikey').optional(),
+  GRAPHQL_PROXY_AUTH_TOKEN: Joi.string().optional(),
+  GRAPHQL_PROXY_AUTH_USERNAME: Joi.string().optional(),
+  GRAPHQL_PROXY_AUTH_PASSWORD: Joi.string().optional(),
+  GRAPHQL_PROXY_AUTH_HEADER: Joi.string().optional(),
+  GRAPHQL_PROXY_AUTH_VALUE: Joi.string().optional(),
+
+  // Proxy Cache
+  PROXY_CACHE_ENABLED: Joi.boolean().default(false),
+  PROXY_CACHE_DEFAULT_TTL: Joi.number().positive().default(300000),
+  PROXY_CACHE_MAX_SIZE: Joi.number().positive().default(100),
 }).unknown(true); // Allow unknown environment variables

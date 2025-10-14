@@ -6,3 +6,4 @@ export { AdminHandler } from './AdminHandler';
 export { MockDataHandler } from './MockDataHandler';
 export { ProxyHandler } from './ProxyHandler';
 export { WebSocketHandler } from './WebSocketHandler';
+export { GraphQLHandler } from './GraphQLHandler';

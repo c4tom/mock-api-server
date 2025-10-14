@@ -1,0 +1,81 @@
+"""
+Sample GraphQL Schema for Mock API Server
+This schema defines types for a simple blog application with users and posts
+"""
+
+type Query {
+  "Get a greeting message"
+  hello: String!
+  
+  "Get a user by ID"
+  user(id: ID!): User
+  
+  "Get all users"
+  users: [User!]!
+  
+  "Get a post by ID"
+  post(id: ID!): Post
+  
+  "Get all posts"
+  posts: [Post!]!
+  
+  "Get posts by user ID"
+  postsByUser(userId: ID!): [Post!]!
+}
+
+type Mutation {
+  "Create a new user"
+  createUser(name: String!, email: String!): User!
+  
+  "Update an existing user"
+  updateUser(id: ID!, name: String, email: String): User!
+  
+  "Delete a user"
+  deleteUser(id: ID!): Boolean!
+  
+  "Create a new post"
+  createPost(title: String!, content: String!, userId: ID!): Post!
+  
+  "Update an existing post"
+  updatePost(id: ID!, title: String, content: String): Post!
+  
+  "Delete a post"
+  deletePost(id: ID!): Boolean!
+}
+
+"""
+User type representing a user in the system
+"""
+type User {
+  "Unique identifier for the user"
+  id: ID!
+  
+  "User's full name"
+  name: String!
+  
+  "User's email address"
+  email: String!
+  
+  "Posts created by this user"
+  posts: [Post!]!
+}
+
+"""
+Post type representing a blog post
+"""
+type Post {
+  "Unique identifier for the post"
+  id: ID!
+  
+  "Post title"
+  title: String!
+  
+  "Post content"
+  content: String!
+  
+  "ID of the user who created this post"
+  userId: ID!
+  
+  "User who created this post"
+  user: User!
+}
