@@ -118,8 +118,15 @@ async function initializeApp() {
     loggingService = new LoggingService(config.logging);
     adminHandler = new AdminHandler(configManager, config, loggingService);
     mockDataHandler = new MockDataHandler(config.mock);
-    proxyHandler = new ProxyHandler(config.proxy);
+    proxyHandler = new ProxyHandler(
+      config.proxy,
+      config.security.cors.allowedOrigins,
+      config.proxy.cache
+    );
     securityMiddleware = new SecurityMiddleware(config.security);
+
+    // Set proxy handler reference in admin handler for cache management
+    adminHandler.setProxyHandler(proxyHandler);
 
     logger.info('Application initialized successfully', {
       environment: config.server.environment,
@@ -438,8 +445,15 @@ function setupRoutes() {
         adminHandler.updateConfig(config);
         adminHandler.updateLoggingService(loggingService);
         mockDataHandler = new MockDataHandler(config.mock);
-        proxyHandler = new ProxyHandler(config.proxy);
+        proxyHandler = new ProxyHandler(
+          config.proxy,
+          config.security.cors.allowedOrigins,
+          config.proxy.cache
+        );
         securityMiddleware = new SecurityMiddleware(config.security);
+
+        // Update proxy handler reference in admin handler
+        adminHandler.setProxyHandler(proxyHandler);
 
         logger.info('Configuration reloaded and handlers reinitialized successfully');
       } catch (error) {
@@ -470,6 +484,11 @@ function setupRoutes() {
         }
       });
     });
+
+    // Cache management endpoints
+    app.get('/admin/cache/stats', adminAuth, adminHandler.getCacheStats);
+    app.post('/admin/cache/clear', adminAuth, adminHandler.clearCache);
+    app.post('/admin/cache/invalidate/:routeName', adminAuth, adminHandler.invalidateCacheByRoute);
   }
 
   // Mock data routes (with auth if enabled)

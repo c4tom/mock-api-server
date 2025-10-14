@@ -7,6 +7,7 @@ Complete documentation for the Mock API Server.
 - [Main README](../README.md) - Getting started and overview
 - [API Reference](./API_REFERENCE.md) - Complete API documentation
 - [Proxy Guide](./PROXY_GUIDE.md) - CORS proxy configuration and usage
+- [Cache Guide](./CACHE_GUIDE.md) - Response caching configuration and usage
 - [Security Guide](./SECURITY_GUIDE.md) - Security configuration and best practices
 - [Troubleshooting](./TROUBLESHOOTING.md) - Common issues and solutions
 - [Configuration Examples](../CONFIG_EXAMPLES.md) - Example configurations for different environments
@@ -40,6 +41,16 @@ See [Proxy Guide](./PROXY_GUIDE.md) for:
 - Authentication forwarding
 - Advanced configuration
 - Use cases and examples
+
+### Response Caching
+
+See [Cache Guide](./CACHE_GUIDE.md) for:
+- Cache configuration
+- TTL settings per route
+- Cache invalidation strategies
+- Performance optimization
+- Admin endpoints for cache management
+- Monitoring and statistics
 
 ### Security
 
@@ -167,6 +178,25 @@ PROXY_ROUTES=api:https://api.example.com
 **Usage:**
 ```bash
 curl http://localhost:3000/proxy/api/endpoint
+```
+
+### Cache Quick Setup
+
+**Enable Caching:**
+```env
+PROXY_CACHE_ENABLED=true
+PROXY_CACHE_DEFAULT_TTL=300000
+PROXY_CACHE_MAX_SIZE=100
+```
+
+**Per-Route TTL:**
+```env
+PROXY_CACHE_TTL_API=600000
+```
+
+**Check Stats:**
+```bash
+curl http://localhost:3000/admin/cache/stats
 ```
 
 ## Support

@@ -6,21 +6,25 @@
 import { Request, Response } from 'express';
 import axios, { AxiosResponse } from 'axios';
 import { ProxyConfig, ProxyRoute, ProxyAuth, ValidationResult } from '../types';
+import { CacheService, CacheConfig } from '../services/CacheService';
 
 export interface ProxyResponse {
     status: number;
     headers: Record<string, string>;
     data: any;
     responseTime: number;
+    cached?: boolean;
 }
 
 export class ProxyHandler {
     private config: ProxyConfig;
     private allowedOrigins: string[];
+    private cacheService: CacheService | null;
 
-    constructor(config: ProxyConfig, allowedOrigins: string[] = ['*']) {
+    constructor(config: ProxyConfig, allowedOrigins: string[] = ['*'], cacheConfig?: CacheConfig) {
         this.config = config;
         this.allowedOrigins = allowedOrigins;
+        this.cacheService = cacheConfig ? new CacheService(cacheConfig) : null;
     }
 
     /**
@@ -47,11 +51,51 @@ export class ProxyHandler {
                 return;
             }
 
-            // Forward the request
-            const proxyResponse = await this.forwardRequest(targetUrl, req);
+            // Check cache for GET requests
+            let proxyResponse: ProxyResponse;
+            const routeName = req.params['route'] || 'direct';
+
+            if (req.method === 'GET' && this.cacheService) {
+                const cacheKey = CacheService.generateKey(
+                    routeName,
+                    req.path,
+                    req.query as Record<string, any>,
+                    req.method
+                );
+
+                const cachedResponse = this.cacheService.get<ProxyResponse>(cacheKey);
+
+                if (cachedResponse) {
+                    proxyResponse = { ...cachedResponse, cached: true };
+                } else {
+                    // Forward the request
+                    proxyResponse = await this.forwardRequest(targetUrl, req);
+
+                    // Cache successful responses (2xx status codes)
+                    if (proxyResponse.status >= 200 && proxyResponse.status < 300) {
+                        const ttl = this.cacheService.getTTLForRoute(routeName);
+                        this.cacheService.set(cacheKey, proxyResponse, ttl);
+                    }
+                }
+            } else {
+                // Forward the request (non-GET or caching disabled)
+                proxyResponse = await this.forwardRequest(targetUrl, req);
+
+                // Invalidate cache for mutating operations
+                if (this.cacheService && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+                    this.cacheService.invalidateByRoute(routeName);
+                }
+            }
 
             // Add CORS headers
             this.addCorsHeaders(res, req.headers.origin);
+
+            // Add cache header if response was cached
+            if (proxyResponse.cached) {
+                res.setHeader('X-Cache', 'HIT');
+            } else {
+                res.setHeader('X-Cache', 'MISS');
+            }
 
             // Filter and set response headers
             const filteredHeaders = this.filterResponseHeaders(proxyResponse.headers);
@@ -484,6 +528,42 @@ export class ProxyHandler {
      */
     getConfig(): ProxyConfig {
         return { ...this.config };
+    }
+
+    /**
+     * Get cache service instance
+     */
+    getCacheService(): CacheService | null {
+        return this.cacheService;
+    }
+
+    /**
+     * Clear cache
+     */
+    clearCache(): void {
+        if (this.cacheService) {
+            this.cacheService.clear();
+        }
+    }
+
+    /**
+     * Invalidate cache by route
+     */
+    invalidateCacheByRoute(routeName: string): number {
+        if (this.cacheService) {
+            return this.cacheService.invalidateByRoute(routeName);
+        }
+        return 0;
+    }
+
+    /**
+     * Get cache statistics
+     */
+    getCacheStats() {
+        if (this.cacheService) {
+            return this.cacheService.getStats();
+        }
+        return null;
     }
 
     /**

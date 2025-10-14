@@ -154,6 +154,42 @@ export class ProxyConfigParser {
     }
 
     /**
+     * Parse cache configuration from environment variables
+     */
+    static parseCacheConfig(env: NodeJS.ProcessEnv): { enabled: boolean; defaultTTL: number; maxSize: number; routeTTLs?: Record<string, number> } | undefined {
+        const cacheEnabled = env['PROXY_CACHE_ENABLED'] === 'true';
+
+        if (!cacheEnabled) {
+            return undefined;
+        }
+
+        const defaultTTL = parseInt(env['PROXY_CACHE_DEFAULT_TTL'] || '300000', 10); // 5 minutes default
+        const maxSize = parseInt(env['PROXY_CACHE_MAX_SIZE'] || '100', 10);
+
+        // Parse per-route TTLs
+        // Format: PROXY_CACHE_TTL_<ROUTE_NAME>=60000
+        const routeTTLs: Record<string, number> = {};
+        const cachePrefix = 'PROXY_CACHE_TTL_';
+
+        Object.keys(env).forEach(key => {
+            if (key.startsWith(cachePrefix)) {
+                const routeName = key.substring(cachePrefix.length).toLowerCase();
+                const ttl = parseInt(env[key] || '0', 10);
+                if (ttl > 0) {
+                    routeTTLs[routeName] = ttl;
+                }
+            }
+        });
+
+        return {
+            enabled: true,
+            defaultTTL,
+            maxSize,
+            routeTTLs: Object.keys(routeTTLs).length > 0 ? routeTTLs : undefined
+        };
+    }
+
+    /**
      * Build complete proxy configuration from environment variables
      */
     static buildProxyConfig(env: NodeJS.ProcessEnv): ProxyConfig {
@@ -188,13 +224,17 @@ export class ProxyConfigParser {
             }
         });
 
+        // Parse cache configuration
+        const cache = this.parseCacheConfig(env);
+
         return {
             enabled,
             routes,
             timeout,
             retries,
             allowedDomains: this.parseAllowedDomains(env['PROXY_ALLOWED_DOMAINS'] || ''),
-            blockedDomains: this.parseBlockedDomains(env['PROXY_BLOCKED_DOMAINS'] || '')
+            blockedDomains: this.parseBlockedDomains(env['PROXY_BLOCKED_DOMAINS'] || ''),
+            cache
         };
     }
 

@@ -641,7 +641,7 @@ describe('API Integration Tests', () => {
             // Create a test app that throws an error
             const testApp = express();
             testApp.use(express.json());
-            testApp.all('/mock/*', async (_req, res, next) => {
+            testApp.all('/mock/*', async (_req, _res, next) => {
                 try {
                     throw new Error('Test error');
                 } catch (error) {

@@ -73,6 +73,15 @@ export interface ProxyConfig {
   retries: number;
   allowedDomains: string[];
   blockedDomains: string[];
+  cache?: CacheConfig;
+}
+
+// Cache configuration
+export interface CacheConfig {
+  enabled: boolean;
+  defaultTTL: number; // milliseconds
+  maxSize: number; // maximum number of entries
+  routeTTLs?: Record<string, number>; // per-route TTL overrides
 }
 
 export interface ProxyRoute {

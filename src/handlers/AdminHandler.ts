@@ -12,11 +12,19 @@ export class AdminHandler {
     private configManager: ConfigManager;
     private config: AppConfig;
     private loggingService: LoggingService | undefined;
+    private proxyHandler: any; // Will be set from index.ts
 
     constructor(configManager: ConfigManager, config: AppConfig, loggingService?: LoggingService) {
         this.configManager = configManager;
         this.config = config;
         this.loggingService = loggingService;
+    }
+
+    /**
+     * Set proxy handler reference for cache management
+     */
+    setProxyHandler(proxyHandler: any): void {
+        this.proxyHandler = proxyHandler;
     }
 
     /**
@@ -277,6 +285,177 @@ export class AdminHandler {
     updateLoggingService(loggingService: LoggingService): void {
         this.loggingService = loggingService;
     }
+
+    /**
+     * Get cache statistics
+     * GET /admin/cache/stats
+     */
+    getCacheStats = (req: AuthenticatedRequest, res: Response): void => {
+        try {
+            if (!this.proxyHandler) {
+                res.status(503).json({
+                    error: {
+                        code: 'PROXY_NOT_INITIALIZED',
+                        message: 'Proxy handler not initialized',
+                        timestamp: new Date().toISOString(),
+                        requestId: req.requestId
+                    }
+                });
+                return;
+            }
+
+            const stats = this.proxyHandler.getCacheStats();
+
+            if (!stats) {
+                res.json({
+                    success: true,
+                    data: {
+                        enabled: false,
+                        message: 'Cache is not enabled'
+                    },
+                    meta: {
+                        timestamp: new Date().toISOString(),
+                        requestId: req.requestId
+                    }
+                });
+                return;
+            }
+
+            res.json({
+                success: true,
+                data: {
+                    enabled: true,
+                    ...stats
+                },
+                meta: {
+                    timestamp: new Date().toISOString(),
+                    requestId: req.requestId,
+                    user: req.user?.username || 'anonymous'
+                }
+            });
+        } catch (error) {
+            res.status(500).json({
+                error: {
+                    code: 'CACHE_STATS_ERROR',
+                    message: 'Failed to retrieve cache statistics',
+                    timestamp: new Date().toISOString(),
+                    requestId: req.requestId
+                }
+            });
+        }
+    };
+
+    /**
+     * Clear all cache entries
+     * POST /admin/cache/clear
+     */
+    clearCache = (req: AuthenticatedRequest, res: Response): void => {
+        try {
+            if (!this.proxyHandler) {
+                res.status(503).json({
+                    error: {
+                        code: 'PROXY_NOT_INITIALIZED',
+                        message: 'Proxy handler not initialized',
+                        timestamp: new Date().toISOString(),
+                        requestId: req.requestId
+                    }
+                });
+                return;
+            }
+
+            this.proxyHandler.clearCache();
+
+            console.log(`[${new Date().toISOString()}] Cache cleared by ${req.user?.username || 'anonymous'}`, {
+                requestId: req.requestId
+            });
+
+            res.json({
+                success: true,
+                message: 'Cache cleared successfully',
+                data: {
+                    clearedAt: new Date().toISOString()
+                },
+                meta: {
+                    timestamp: new Date().toISOString(),
+                    requestId: req.requestId,
+                    user: req.user?.username || 'anonymous'
+                }
+            });
+        } catch (error) {
+            res.status(500).json({
+                error: {
+                    code: 'CACHE_CLEAR_ERROR',
+                    message: 'Failed to clear cache',
+                    timestamp: new Date().toISOString(),
+                    requestId: req.requestId
+                }
+            });
+        }
+    };
+
+    /**
+     * Invalidate cache for a specific route
+     * POST /admin/cache/invalidate/:routeName
+     */
+    invalidateCacheByRoute = (req: AuthenticatedRequest, res: Response): void => {
+        try {
+            if (!this.proxyHandler) {
+                res.status(503).json({
+                    error: {
+                        code: 'PROXY_NOT_INITIALIZED',
+                        message: 'Proxy handler not initialized',
+                        timestamp: new Date().toISOString(),
+                        requestId: req.requestId
+                    }
+                });
+                return;
+            }
+
+            const routeName = req.params['routeName'];
+            if (!routeName) {
+                res.status(400).json({
+                    error: {
+                        code: 'MISSING_ROUTE_NAME',
+                        message: 'Route name is required',
+                        timestamp: new Date().toISOString(),
+                        requestId: req.requestId
+                    }
+                });
+                return;
+            }
+
+            const count = this.proxyHandler.invalidateCacheByRoute(routeName);
+
+            console.log(`[${new Date().toISOString()}] Cache invalidated for route '${routeName}' by ${req.user?.username || 'anonymous'}`, {
+                requestId: req.requestId,
+                entriesInvalidated: count
+            });
+
+            res.json({
+                success: true,
+                message: `Cache invalidated for route '${routeName}'`,
+                data: {
+                    routeName,
+                    entriesInvalidated: count,
+                    invalidatedAt: new Date().toISOString()
+                },
+                meta: {
+                    timestamp: new Date().toISOString(),
+                    requestId: req.requestId,
+                    user: req.user?.username || 'anonymous'
+                }
+            });
+        } catch (error) {
+            res.status(500).json({
+                error: {
+                    code: 'CACHE_INVALIDATE_ERROR',
+                    message: 'Failed to invalidate cache',
+                    timestamp: new Date().toISOString(),
+                    requestId: req.requestId
+                }
+            });
+        }
+    };
 
     /**
      * Sanitize configuration by hiding sensitive data
