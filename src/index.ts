@@ -6,7 +6,7 @@ import {
   SecurityMiddleware,
   createTransformationMiddleware
 } from './middleware';
-import { AdminHandler, MockDataHandler, ProxyHandler, WebSocketHandler, GraphQLHandler } from './handlers';
+import { AdminHandler, MockDataHandler, ProxyHandler, WebSocketHandler, GraphQLHandler, DashboardHandler } from './handlers';
 import { LoggingService } from './services';
 import { AppConfig } from './types';
 import { TransformationConfig } from './types/transformation';
@@ -48,6 +48,7 @@ let securityMiddleware: SecurityMiddleware;
 let transformationMiddleware: ReturnType<typeof createTransformationMiddleware>;
 let webSocketHandler: WebSocketHandler | undefined;
 let graphqlHandler: GraphQLHandler | undefined;
+let dashboardHandler: DashboardHandler;
 let server: any;
 
 /**
@@ -129,6 +130,7 @@ async function initializeApp() {
       config.proxy.cache
     );
     securityMiddleware = new SecurityMiddleware(config.security);
+    dashboardHandler = new DashboardHandler(configManager, loggingService);
 
     // Initialize transformation middleware
     transformationMiddleware = createTransformationMiddleware(loadTransformations());
@@ -455,6 +457,25 @@ function setupMiddleware() {
   // Request logging (first in chain)
   app.use(loggingService.requestLogger);
 
+  // Dashboard metrics recording
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const startTime = Date.now();
+
+    res.on('finish', () => {
+      const responseTime = Date.now() - startTime;
+      dashboardHandler.recordRequest({
+        timestamp: Date.now(),
+        method: req.method,
+        path: req.path,
+        statusCode: res.statusCode,
+        responseTime,
+        ip: req.ip || 'unknown'
+      });
+    });
+
+    next();
+  });
+
   // Security middleware chain
   app.use(securityMiddleware.handlePreflight);
   app.use(securityMiddleware.validateOrigin);
@@ -708,6 +729,21 @@ function setupRoutes() {
     });
   }
 
+  // Dashboard routes (with auth if enabled)
+  if (config.server.adminEnabled) {
+    const dashboardAuth = config.security.authentication.enabled
+      ? securityMiddleware.requireAdmin
+      : (_req: Request, _res: Response, next: NextFunction) => next();
+
+    // Serve dashboard UI
+    app.get('/dashboard', dashboardAuth, dashboardHandler.serveDashboard);
+
+    // Dashboard API endpoints
+    app.get('/dashboard/api/metrics', dashboardAuth, dashboardHandler.getMetrics);
+    app.get('/dashboard/api/requests', dashboardAuth, dashboardHandler.getRecentRequests);
+    app.get('/dashboard/api/config', dashboardAuth, dashboardHandler.getConfig);
+  }
+
   // Mock data routes (with auth if enabled)
   const mockAuth = config.security.authentication.enabled
     ? securityMiddleware.authenticateRequest
@@ -912,6 +948,7 @@ async function startServer() {
       console.log(`Health check: http://${HOST}:${PORT}/health`);
       if (config.server.adminEnabled) {
         console.log(`Admin panel: http://${HOST}:${PORT}/admin/health`);
+        console.log(`Dashboard UI: http://${HOST}:${PORT}/dashboard`);
       }
       if (config.websocket?.enabled) {
         console.log(`WebSocket URL: ws://${HOST}:${PORT}${config.websocket.path}`);

@@ -7,3 +7,4 @@ export { MockDataHandler } from './MockDataHandler';
 export { ProxyHandler } from './ProxyHandler';
 export { WebSocketHandler } from './WebSocketHandler';
 export { GraphQLHandler } from './GraphQLHandler';
+export { DashboardHandler } from './DashboardHandler';

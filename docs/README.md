@@ -6,6 +6,7 @@ Complete documentation for the Mock API Server.
 
 - [Main README](../README.md) - Getting started and overview
 - [API Reference](./API_REFERENCE.md) - Complete API documentation
+- [Dashboard Guide](./DASHBOARD_GUIDE.md) - Web-based monitoring and management UI
 - [Proxy Guide](./PROXY_GUIDE.md) - CORS proxy configuration and usage
 - [Cache Guide](./CACHE_GUIDE.md) - Response caching configuration and usage
 - [Transformation Guide](./TRANSFORMATION_GUIDE.md) - Request/response transformation
@@ -62,6 +63,16 @@ See [Transformation Guide](./TRANSFORMATION_GUIDE.md) for:
 - Response wrapping
 - Path matching patterns
 - Transformation examples and use cases
+
+### Dashboard
+
+See [Dashboard Guide](./DASHBOARD_GUIDE.md) for:
+- Real-time monitoring
+- Request tracking and analytics
+- Configuration management
+- Performance metrics
+- Visual analytics with charts
+- API endpoints for dashboard data
 
 ### Security
 
