@@ -231,6 +231,18 @@ export class ConfigManager {
           introspection: env.GRAPHQL_INTROSPECTION !== undefined ? env.GRAPHQL_INTROSPECTION : true,
         }
       }),
+      ...(env.RECORDING_ENABLED && {
+        recording: {
+          enabled: env.RECORDING_ENABLED,
+          autoRecord: env.RECORDING_AUTO_RECORD || false,
+          maxRecordings: env.RECORDING_MAX_RECORDINGS ? parseInt(env.RECORDING_MAX_RECORDINGS, 10) : 1000,
+          storageType: env.RECORDING_STORAGE_TYPE || 'memory',
+          storagePath: env.RECORDING_STORAGE_PATH || './data/recordings',
+          excludePaths: this.parseStringArray(env.RECORDING_EXCLUDE_PATHS || ''),
+          includeHeaders: this.parseStringArray(env.RECORDING_INCLUDE_HEADERS || ''),
+          excludeHeaders: this.parseStringArray(env.RECORDING_EXCLUDE_HEADERS || ''),
+        }
+      }),
     };
   }
 

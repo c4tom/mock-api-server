@@ -8,3 +8,4 @@ export { ProxyHandler } from './ProxyHandler';
 export { WebSocketHandler } from './WebSocketHandler';
 export { GraphQLHandler } from './GraphQLHandler';
 export { DashboardHandler } from './DashboardHandler';
+export { RecordingHandler } from './RecordingHandler';

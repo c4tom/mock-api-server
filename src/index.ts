@@ -6,7 +6,7 @@ import {
   SecurityMiddleware,
   createTransformationMiddleware
 } from './middleware';
-import { AdminHandler, MockDataHandler, ProxyHandler, WebSocketHandler, GraphQLHandler, DashboardHandler } from './handlers';
+import { AdminHandler, MockDataHandler, ProxyHandler, WebSocketHandler, GraphQLHandler, DashboardHandler, RecordingHandler } from './handlers';
 import { LoggingService } from './services';
 import { AppConfig } from './types';
 import { TransformationConfig } from './types/transformation';
@@ -49,6 +49,7 @@ let transformationMiddleware: ReturnType<typeof createTransformationMiddleware>;
 let webSocketHandler: WebSocketHandler | undefined;
 let graphqlHandler: GraphQLHandler | undefined;
 let dashboardHandler: DashboardHandler;
+let recordingHandler: RecordingHandler | undefined;
 let server: any;
 
 /**
@@ -148,6 +149,17 @@ async function initializeApp() {
       });
     }
 
+    // Initialize Recording handler if enabled
+    if (config.recording?.enabled) {
+      recordingHandler = new RecordingHandler(config.recording);
+      await recordingHandler.loadFromStorage();
+      logger.info('Recording handler initialized', {
+        autoRecord: config.recording.autoRecord,
+        maxRecordings: config.recording.maxRecordings,
+        storageType: config.recording.storageType,
+      });
+    }
+
     logger.info('Application initialized successfully', {
       environment: config.server.environment,
       port: config.server.port,
@@ -157,6 +169,7 @@ async function initializeApp() {
       proxyEnabled: config.proxy.enabled,
       adminEnabled: config.server.adminEnabled,
       graphqlEnabled: config.graphql?.enabled || false,
+      recordingEnabled: config.recording?.enabled || false,
       transformationsLoaded: transformationMiddleware.getTransformations().length
     });
   } catch (error) {
@@ -485,6 +498,11 @@ function setupMiddleware() {
   // Transformation middleware (after security, before routes)
   app.use(transformationMiddleware.middleware());
 
+  // Recording middleware (after transformation, before routes)
+  if (recordingHandler) {
+    app.use(recordingHandler.recordingMiddleware());
+  }
+
   // Authentication middleware will be applied per route as needed
   // This will be applied per route as needed
 }
@@ -537,6 +555,14 @@ function setupRoutes() {
           graphqlHandler = new GraphQLHandler(config.graphql);
         } else {
           graphqlHandler = undefined;
+        }
+
+        // Reinitialize Recording handler if enabled
+        if (config.recording?.enabled) {
+          recordingHandler = new RecordingHandler(config.recording);
+          await recordingHandler.loadFromStorage();
+        } else {
+          recordingHandler = undefined;
         }
 
         logger.info('Configuration reloaded and handlers reinitialized successfully');
@@ -727,6 +753,34 @@ function setupRoutes() {
         }
       });
     });
+
+    // Recording management endpoints
+    if (recordingHandler) {
+      // Recording control
+      app.post('/admin/recording/start', adminAuth, recordingHandler.startRecording);
+      app.post('/admin/recording/stop', adminAuth, recordingHandler.stopRecording);
+      app.get('/admin/recording/status', adminAuth, recordingHandler.getRecordingStatus);
+      app.get('/admin/recording/stats', adminAuth, recordingHandler.getStats);
+
+      // Recordings CRUD
+      app.get('/admin/recordings', adminAuth, recordingHandler.getRecordings);
+      app.get('/admin/recordings/:id', adminAuth, recordingHandler.getRecording);
+      app.delete('/admin/recordings/:id', adminAuth, recordingHandler.deleteRecording);
+      app.delete('/admin/recordings', adminAuth, recordingHandler.clearRecordings);
+
+      // Replay
+      app.post('/admin/recordings/:id/replay', adminAuth, recordingHandler.replayRecording);
+
+      // Collections
+      app.post('/admin/recording/collections', adminAuth, recordingHandler.createCollection);
+      app.get('/admin/recording/collections', adminAuth, recordingHandler.getCollections);
+      app.get('/admin/recording/collections/:id', adminAuth, recordingHandler.getCollection);
+      app.delete('/admin/recording/collections/:id', adminAuth, recordingHandler.deleteCollection);
+
+      // Import/Export
+      app.get('/admin/recording/collections/:id/export', adminAuth, recordingHandler.exportCollection);
+      app.post('/admin/recording/collections/import', adminAuth, recordingHandler.importCollection);
+    }
   }
 
   // Dashboard routes (with auth if enabled)

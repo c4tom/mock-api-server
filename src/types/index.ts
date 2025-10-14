@@ -8,3 +8,4 @@ export * from './auth';
 export * from './middleware';
 export * from './mock';
 export * from './transformation';
+export * from './recording';

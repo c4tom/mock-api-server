@@ -11,6 +11,19 @@ export interface AppConfig {
   logging: LoggingConfig;
   websocket?: WebSocketConfig;
   graphql?: GraphQLConfig;
+  recording?: RecordingConfig;
+}
+
+// Recording configuration
+export interface RecordingConfig {
+  enabled: boolean;
+  autoRecord: boolean;
+  maxRecordings: number;
+  storageType: 'memory' | 'file';
+  storagePath?: string;
+  excludePaths?: string[];
+  includeHeaders?: string[];
+  excludeHeaders?: string[];
 }
 
 // Server configuration
