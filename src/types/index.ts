@@ -9,3 +9,4 @@ export * from './middleware';
 export * from './mock';
 export * from './transformation';
 export * from './recording';
+export * from './generation';

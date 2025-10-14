@@ -5,6 +5,7 @@ A flexible backend server that can act as both a mock data server (similar to js
 ## Features
 
 - 🎭 **Mock Data Server**: Serve mock data through REST endpoints
+- 🎲 **Data Generation**: Generate realistic test data on-the-fly with Faker.js
 - 🔄 **CORS Proxy**: Bypass CORS limitations during development
 - 🔀 **Request/Response Transformation**: Transform data with field mapping, custom functions, and more
 - 🔌 **WebSocket Support**: Real-time mock events and WebSocket proxying
@@ -368,6 +369,46 @@ AUTH_ENABLED=false
 - Verify .env file is in the correct location
 - Check file permissions
 
+## Data Generation
+
+The server can generate realistic test data on-the-fly using Faker.js. See the [Data Generation Guide](docs/DATA_GENERATION_GUIDE.md) for detailed documentation.
+
+### Quick Example
+
+```json
+{
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "response": {
+        "name": "users",
+        "count": 20,
+        "fields": {
+          "id": { "type": "uuid" },
+          "name": { "type": "name" },
+          "email": { "type": "email" },
+          "age": { "type": "number", "min": 18, "max": 80 },
+          "role": { "type": "string", "enum": ["admin", "user", "guest"] }
+        }
+      }
+    }
+  ]
+}
+```
+
+### Features
+
+- **40+ Field Types**: Names, emails, addresses, products, prices, and more
+- **Nested Objects**: Generate complex data structures
+- **Arrays**: Create collections of generated items
+- **Enum Values**: Select from predefined options
+- **Custom Ranges**: Control min/max values for numbers and dates
+- **Reproducible Data**: Use seeds for consistent test data
+- **Pre-built Templates**: Ready-to-use schemas in `data/templates/`
+
+Check out the templates in [data/templates/](data/templates/) for ready-to-use examples.
+
 ## WebSocket Support
 
 The server provides WebSocket support for real-time communication and WebSocket proxying. See the [WebSocket Guide](docs/WEBSOCKET_GUIDE.md) for detailed documentation.
@@ -483,6 +524,22 @@ npm run lint
 # Fix linting issues
 npm run lint:fix
 ```
+
+## Documentation
+
+For detailed information, see the following guides:
+
+- [Data Generation Guide](docs/DATA_GENERATION_GUIDE.md) - Generate realistic test data with Faker.js
+- [WebSocket Guide](docs/WEBSOCKET_GUIDE.md) - Real-time communication and WebSocket proxying
+- [Transformation Guide](docs/TRANSFORMATION_GUIDE.md) - Request/response data transformation
+- [GraphQL Guide](docs/GRAPHQL_GUIDE.md) - GraphQL endpoint and proxy functionality
+- [Proxy Guide](docs/PROXY_GUIDE.md) - CORS proxy configuration and usage
+- [Cache Guide](docs/CACHE_GUIDE.md) - Response caching for better performance
+- [Recording Guide](docs/RECORDING_GUIDE.md) - Record and replay API requests
+- [Dashboard Guide](docs/DASHBOARD_GUIDE.md) - Web-based admin dashboard
+- [Security Guide](docs/SECURITY_GUIDE.md) - Security configuration and best practices
+- [API Reference](docs/API_REFERENCE.md) - Complete API documentation
+- [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
 
 ## License
 

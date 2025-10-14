@@ -1,0 +1,54 @@
+{
+    "endpoints": [
+        {
+            "method": "GET",
+            "path": "/api/generated/users",
+            "statusCode": 200,
+            "response": {
+                "name": "users",
+                "count": 20,
+                "fields": {
+                    "id": {
+                        "type": "uuid"
+                    },
+                    "firstName": {
+                        "type": "firstName"
+                    },
+                    "lastName": {
+                        "type": "lastName"
+                    },
+                    "email": {
+                        "type": "email"
+                    },
+                    "phone": {
+                        "type": "phone"
+                    },
+                    "avatar": {
+                        "type": "avatar"
+                    },
+                    "age": {
+                        "type": "number",
+                        "min": 18,
+                        "max": 80
+                    },
+                    "isActive": {
+                        "type": "boolean"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "admin",
+                            "user",
+                            "moderator",
+                            "guest"
+                        ]
+                    },
+                    "createdAt": {
+                        "type": "date",
+                        "format": "iso"
+                    }
+                }
+            }
+        }
+    ]
+}

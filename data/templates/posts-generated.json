@@ -1,0 +1,65 @@
+{
+    "endpoints": [
+        {
+            "method": "GET",
+            "path": "/api/generated/posts",
+            "statusCode": 200,
+            "response": {
+                "name": "posts",
+                "count": 30,
+                "fields": {
+                    "id": {
+                        "type": "uuid"
+                    },
+                    "title": {
+                        "type": "sentence"
+                    },
+                    "content": {
+                        "type": "paragraph"
+                    },
+                    "author": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "uuid"
+                            },
+                            "name": {
+                                "type": "name"
+                            },
+                            "email": {
+                                "type": "email"
+                            },
+                            "avatar": {
+                                "type": "avatar"
+                            }
+                        }
+                    },
+                    "tags": {
+                        "type": "array",
+                        "length": 5,
+                        "items": {
+                            "type": "word"
+                        }
+                    },
+                    "views": {
+                        "type": "number",
+                        "min": 0,
+                        "max": 10000
+                    },
+                    "likes": {
+                        "type": "number",
+                        "min": 0,
+                        "max": 1000
+                    },
+                    "published": {
+                        "type": "boolean"
+                    },
+                    "publishedAt": {
+                        "type": "date",
+                        "format": "iso"
+                    }
+                }
+            }
+        }
+    ]
+}

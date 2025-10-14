@@ -1,0 +1,78 @@
+{
+    "endpoints": [
+        {
+            "method": "GET",
+            "path": "/api/generated/products",
+            "statusCode": 200,
+            "response": {
+                "name": "products",
+                "count": 50,
+                "fields": {
+                    "id": {
+                        "type": "uuid"
+                    },
+                    "name": {
+                        "type": "product"
+                    },
+                    "description": {
+                        "type": "paragraph"
+                    },
+                    "price": {
+                        "type": "price",
+                        "min": 10,
+                        "max": 999
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "Electronics",
+                            "Clothing",
+                            "Food",
+                            "Books",
+                            "Toys"
+                        ]
+                    },
+                    "inStock": {
+                        "type": "boolean"
+                    },
+                    "quantity": {
+                        "type": "number",
+                        "min": 0,
+                        "max": 1000
+                    },
+                    "image": {
+                        "type": "image"
+                    },
+                    "color": {
+                        "type": "color"
+                    },
+                    "tags": {
+                        "type": "array",
+                        "length": 3,
+                        "items": {
+                            "type": "word"
+                        }
+                    },
+                    "manufacturer": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "company"
+                            },
+                            "country": {
+                                "type": "country"
+                            },
+                            "website": {
+                                "type": "url"
+                            }
+                        }
+                    },
+                    "createdAt": {
+                        "type": "date",
+                        "format": "iso"
+                    }
+                }
+            }
+        }
+    ]
+}

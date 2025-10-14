@@ -18,16 +18,20 @@ import {
     ValidationResult
 } from '../types/mock';
 import { MockConfig } from '../types/config';
+import { DataGeneratorService } from '../services/DataGeneratorService';
+import { DataGenerationSchema } from '../types/generation';
 
 export class MockDataHandler implements IMockDataHandler {
     private mockData: MockDataSet;
     private storage: MockDataStorage;
     private config: MockConfig;
+    private dataGenerator: DataGeneratorService;
 
     constructor(config: MockConfig) {
         this.config = config;
         this.mockData = { endpoints: {} };
         this.storage = {};
+        this.dataGenerator = new DataGeneratorService();
     }
 
     /**
@@ -392,6 +396,11 @@ export class MockDataHandler implements IMockDataHandler {
             responseData = responseData();
         }
 
+        // Check if response is a generation schema
+        if (this.isGenerationSchema(responseData)) {
+            responseData = this.dataGenerator.generate(responseData as DataGenerationSchema);
+        }
+
         // Handle array responses with storage data for GET requests
         if (Array.isArray(responseData) && this.config.enableCrud) {
             const storageKey = this.getStorageKey(endpoint.path);
@@ -606,5 +615,17 @@ export class MockDataHandler implements IMockDataHandler {
      */
     private delay(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    /**
+     * Check if response data is a generation schema
+     */
+    private isGenerationSchema(data: any): boolean {
+        return (
+            data &&
+            typeof data === 'object' &&
+            'fields' in data &&
+            typeof data.fields === 'object'
+        );
     }
 }
