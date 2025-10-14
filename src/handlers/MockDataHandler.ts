@@ -20,18 +20,58 @@ import {
 import { MockConfig } from '../types/config';
 import { DataGeneratorService } from '../services/DataGeneratorService';
 import { DataGenerationSchema } from '../types/generation';
+import { DatabaseService } from '../services/DatabaseService';
+import { DatabaseConfig } from '../types/database';
 
 export class MockDataHandler implements IMockDataHandler {
     private mockData: MockDataSet;
     private storage: MockDataStorage;
     private config: MockConfig;
     private dataGenerator: DataGeneratorService;
+    private databaseService?: DatabaseService;
+    private useDatabasePersistence: boolean = false;
 
-    constructor(config: MockConfig) {
+    constructor(config: MockConfig, databaseConfig?: DatabaseConfig) {
         this.config = config;
         this.mockData = { endpoints: {} };
         this.storage = {};
         this.dataGenerator = new DataGeneratorService();
+
+        // Initialize database service if config is provided and enabled
+        if (databaseConfig && databaseConfig.enabled) {
+            this.databaseService = new DatabaseService(databaseConfig);
+            this.useDatabasePersistence = true;
+        }
+    }
+
+    /**
+     * Initialize database connection
+     */
+    async initializeDatabase(): Promise<void> {
+        if (this.databaseService && this.useDatabasePersistence) {
+            try {
+                await this.databaseService.connect();
+                console.log('Database connected successfully');
+
+                // Sync data from database if configured
+                const dbConfig = this.databaseService as any;
+                if (dbConfig.config?.syncOnStartup) {
+                    await this.syncFromDatabase();
+                }
+            } catch (error) {
+                console.error('Failed to connect to database:', error);
+                this.useDatabasePersistence = false;
+            }
+        }
+    }
+
+    /**
+     * Close database connection
+     */
+    async closeDatabase(): Promise<void> {
+        if (this.databaseService) {
+            await this.databaseService.disconnect();
+        }
     }
 
     /**
@@ -260,17 +300,37 @@ export class MockDataHandler implements IMockDataHandler {
         endpoint: ExtendedMockEndpoint,
         res: Response
     ): Promise<void> {
-        if (!this.storage[storageKey]) {
-            this.storage[storageKey] = { data: [], lastId: 0 };
+        let newItem: any;
+
+        if (this.useDatabasePersistence && this.databaseService) {
+            // Use database persistence
+            try {
+                const collectionName = this.getCollectionName(storageKey);
+                newItem = await this.databaseService.create(collectionName, context.body);
+            } catch (error) {
+                console.error('Database create error:', error);
+                res.status(500).json({
+                    error: {
+                        code: 'DATABASE_ERROR',
+                        message: 'Failed to create record in database'
+                    }
+                });
+                return;
+            }
+        } else {
+            // Use in-memory storage
+            if (!this.storage[storageKey]) {
+                this.storage[storageKey] = { data: [], lastId: 0 };
+            }
+
+            newItem = {
+                id: ++this.storage[storageKey].lastId,
+                ...context.body,
+                createdAt: new Date().toISOString()
+            };
+
+            this.storage[storageKey].data.push(newItem);
         }
-
-        const newItem = {
-            id: ++this.storage[storageKey].lastId,
-            ...context.body,
-            createdAt: new Date().toISOString()
-        };
-
-        this.storage[storageKey].data.push(newItem);
 
         const responseOptions: ResponseFormatOptions = {
             contentType: endpoint.contentType as any || 'json',
@@ -291,10 +351,6 @@ export class MockDataHandler implements IMockDataHandler {
         endpoint: ExtendedMockEndpoint,
         res: Response
     ): Promise<void> {
-        if (!this.storage[storageKey]) {
-            this.storage[storageKey] = { data: [], lastId: 0 };
-        }
-
         // Extract ID from path (assuming /resource/:id pattern)
         const pathParts = context.path.split('/');
         const idStr = pathParts[pathParts.length - 1];
@@ -310,25 +366,59 @@ export class MockDataHandler implements IMockDataHandler {
             return;
         }
 
-        const itemIndex = this.storage[storageKey].data.findIndex(item => item.id === id);
+        let updatedItem: any;
 
-        if (itemIndex === -1) {
-            res.status(404).json({
-                error: {
-                    code: 'ITEM_NOT_FOUND',
-                    message: `Item with ID ${id} not found`
+        if (this.useDatabasePersistence && this.databaseService) {
+            // Use database persistence
+            try {
+                const collectionName = this.getCollectionName(storageKey);
+                updatedItem = await this.databaseService.update(collectionName, id, context.body);
+
+                if (!updatedItem) {
+                    res.status(404).json({
+                        error: {
+                            code: 'ITEM_NOT_FOUND',
+                            message: `Item with ID ${id} not found`
+                        }
+                    });
+                    return;
                 }
-            });
-            return;
+            } catch (error) {
+                console.error('Database update error:', error);
+                res.status(500).json({
+                    error: {
+                        code: 'DATABASE_ERROR',
+                        message: 'Failed to update record in database'
+                    }
+                });
+                return;
+            }
+        } else {
+            // Use in-memory storage
+            if (!this.storage[storageKey]) {
+                this.storage[storageKey] = { data: [], lastId: 0 };
+            }
+
+            const itemIndex = this.storage[storageKey].data.findIndex(item => item.id === id);
+
+            if (itemIndex === -1) {
+                res.status(404).json({
+                    error: {
+                        code: 'ITEM_NOT_FOUND',
+                        message: `Item with ID ${id} not found`
+                    }
+                });
+                return;
+            }
+
+            updatedItem = {
+                ...this.storage[storageKey].data[itemIndex],
+                ...context.body,
+                updatedAt: new Date().toISOString()
+            };
+
+            this.storage[storageKey].data[itemIndex] = updatedItem;
         }
-
-        const updatedItem = {
-            ...this.storage[storageKey].data[itemIndex],
-            ...context.body,
-            updatedAt: new Date().toISOString()
-        };
-
-        this.storage[storageKey].data[itemIndex] = updatedItem;
 
         const responseOptions: ResponseFormatOptions = {
             contentType: endpoint.contentType as any || 'json',
@@ -349,10 +439,6 @@ export class MockDataHandler implements IMockDataHandler {
         _endpoint: ExtendedMockEndpoint,
         res: Response
     ): Promise<void> {
-        if (!this.storage[storageKey]) {
-            this.storage[storageKey] = { data: [], lastId: 0 };
-        }
-
         // Extract ID from path
         const pathParts = context.path.split('/');
         const idStr = pathParts[pathParts.length - 1];
@@ -368,19 +454,53 @@ export class MockDataHandler implements IMockDataHandler {
             return;
         }
 
-        const itemIndex = this.storage[storageKey].data.findIndex(item => item.id === id);
+        let deleted: boolean;
 
-        if (itemIndex === -1) {
-            res.status(404).json({
-                error: {
-                    code: 'ITEM_NOT_FOUND',
-                    message: `Item with ID ${id} not found`
+        if (this.useDatabasePersistence && this.databaseService) {
+            // Use database persistence
+            try {
+                const collectionName = this.getCollectionName(storageKey);
+                deleted = await this.databaseService.delete(collectionName, id);
+
+                if (!deleted) {
+                    res.status(404).json({
+                        error: {
+                            code: 'ITEM_NOT_FOUND',
+                            message: `Item with ID ${id} not found`
+                        }
+                    });
+                    return;
                 }
-            });
-            return;
-        }
+            } catch (error) {
+                console.error('Database delete error:', error);
+                res.status(500).json({
+                    error: {
+                        code: 'DATABASE_ERROR',
+                        message: 'Failed to delete record from database'
+                    }
+                });
+                return;
+            }
+        } else {
+            // Use in-memory storage
+            if (!this.storage[storageKey]) {
+                this.storage[storageKey] = { data: [], lastId: 0 };
+            }
 
-        this.storage[storageKey].data.splice(itemIndex, 1);
+            const itemIndex = this.storage[storageKey].data.findIndex(item => item.id === id);
+
+            if (itemIndex === -1) {
+                res.status(404).json({
+                    error: {
+                        code: 'ITEM_NOT_FOUND',
+                        message: `Item with ID ${id} not found`
+                    }
+                });
+                return;
+            }
+
+            this.storage[storageKey].data.splice(itemIndex, 1);
+        }
 
         res.status(204).send();
     }
@@ -404,7 +524,21 @@ export class MockDataHandler implements IMockDataHandler {
         // Handle array responses with storage data for GET requests
         if (Array.isArray(responseData) && this.config.enableCrud) {
             const storageKey = this.getStorageKey(endpoint.path);
-            if (this.storage[storageKey] && this.storage[storageKey].data.length > 0) {
+
+            if (this.useDatabasePersistence && this.databaseService) {
+                // Fetch from database
+                try {
+                    const collectionName = this.getCollectionName(storageKey);
+                    const dbData = await this.databaseService.findAll(collectionName);
+                    if (dbData.length > 0) {
+                        responseData = dbData;
+                    }
+                } catch (error) {
+                    console.error('Database fetch error:', error);
+                    // Fall back to in-memory or default data
+                }
+            } else if (this.storage[storageKey] && this.storage[storageKey].data.length > 0) {
+                // Use in-memory storage
                 responseData = this.storage[storageKey].data;
             }
         }
@@ -627,5 +761,56 @@ export class MockDataHandler implements IMockDataHandler {
             'fields' in data &&
             typeof data.fields === 'object'
         );
+    }
+
+    /**
+     * Get collection name from storage key
+     */
+    private getCollectionName(storageKey: string): string {
+        // Remove leading slash and replace remaining slashes with underscores
+        return storageKey.replace(/^\//, '').replace(/\//g, '_') || 'default';
+    }
+
+    /**
+     * Sync data from database to memory
+     */
+    private async syncFromDatabase(): Promise<void> {
+        if (!this.databaseService) {
+            return;
+        }
+
+        try {
+            // Sync all endpoints that have array responses
+            for (const endpoint of Object.values(this.mockData.endpoints)) {
+                if (Array.isArray(endpoint.response)) {
+                    const storageKey = this.getStorageKey(endpoint.path);
+                    const collectionName = this.getCollectionName(storageKey);
+
+                    const dbData = await this.databaseService.findAll(collectionName);
+
+                    if (dbData.length === 0 && endpoint.response.length > 0) {
+                        // Seed database with initial data
+                        await this.databaseService.createMany(collectionName, endpoint.response);
+                        console.log(`Seeded database collection: ${collectionName}`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Failed to sync from database:', error);
+        }
+    }
+
+    /**
+     * Get database health status
+     */
+    async getDatabaseHealth(): Promise<any> {
+        if (!this.databaseService) {
+            return {
+                enabled: false,
+                message: 'Database persistence is not enabled'
+            };
+        }
+
+        return await this.databaseService.healthCheck();
     }
 }

@@ -124,7 +124,18 @@ async function initializeApp() {
     // Initialize services and handlers
     loggingService = new LoggingService(config.logging);
     adminHandler = new AdminHandler(configManager, config, loggingService);
-    mockDataHandler = new MockDataHandler(config.mock);
+    mockDataHandler = new MockDataHandler(config.mock, config.database);
+
+    // Initialize database if enabled
+    if (config.database?.enabled) {
+      await mockDataHandler.initializeDatabase();
+      logger.info('Database persistence enabled', {
+        type: config.database.type,
+        autoMigrate: config.database.autoMigrate,
+        syncOnStartup: config.database.syncOnStartup
+      });
+    }
+
     proxyHandler = new ProxyHandler(
       config.proxy,
       config.security.cors.allowedOrigins,
@@ -539,7 +550,21 @@ function setupRoutes() {
         loggingService.updateConfig(config.logging);
         adminHandler.updateConfig(config);
         adminHandler.updateLoggingService(loggingService);
-        mockDataHandler = new MockDataHandler(config.mock);
+
+        // Close old database connection if exists
+        await mockDataHandler.closeDatabase();
+
+        // Reinitialize mock data handler with new config
+        mockDataHandler = new MockDataHandler(config.mock, config.database);
+
+        // Initialize database if enabled
+        if (config.database?.enabled) {
+          await mockDataHandler.initializeDatabase();
+          logger.info('Database persistence reinitialized', {
+            type: config.database.type
+          });
+        }
+
         proxyHandler = new ProxyHandler(
           config.proxy,
           config.security.cors.allowedOrigins,
@@ -573,6 +598,29 @@ function setupRoutes() {
 
     // Health check with detailed info
     app.get('/admin/health', adminAuth, adminHandler.getHealthStatus);
+
+    // Database health check
+    app.get('/admin/database/health', adminAuth, async (req: Request, res: Response) => {
+      try {
+        const health = await mockDataHandler.getDatabaseHealth();
+        res.json({
+          success: true,
+          data: health,
+          meta: {
+            timestamp: new Date().toISOString(),
+            requestId: (req as any).requestId
+          }
+        });
+      } catch (error) {
+        res.status(500).json({
+          error: {
+            code: 'DATABASE_HEALTH_ERROR',
+            message: error instanceof Error ? error.message : 'Failed to check database health',
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
+    });
 
     // Server statistics
     app.get('/admin/stats', adminAuth, adminHandler.getServerStats);
@@ -943,8 +991,15 @@ async function gracefulShutdown(signal: string): Promise<void> {
       // Perform cleanup tasks
       logger.info('Performing cleanup tasks');
 
-      // Close any open connections, database connections, etc.
-      // In this case, we don't have persistent connections to close
+      // Close database connection
+      if (mockDataHandler) {
+        logger.info('Closing database connection');
+        mockDataHandler.closeDatabase().then(() => {
+          logger.info('Database connection closed');
+        }).catch((err: Error) => {
+          logger.error('Error closing database connection', { error: err });
+        });
+      }
 
       logger.info('Cleanup completed, exiting process');
       process.exit(0);

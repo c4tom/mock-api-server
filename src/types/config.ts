@@ -2,6 +2,8 @@
  * Configuration interfaces and types for the Mock API Server
  */
 
+import { DatabaseConfig } from './database';
+
 // Main application configuration interface
 export interface AppConfig {
   server: ServerConfig;
@@ -12,6 +14,7 @@ export interface AppConfig {
   websocket?: WebSocketConfig;
   graphql?: GraphQLConfig;
   recording?: RecordingConfig;
+  database?: DatabaseConfig;
 }
 
 // Recording configuration

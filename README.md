@@ -6,6 +6,7 @@ A flexible backend server that can act as both a mock data server (similar to js
 
 - 🎭 **Mock Data Server**: Serve mock data through REST endpoints
 - 🎲 **Data Generation**: Generate realistic test data on-the-fly with Faker.js
+- 💾 **Database Persistence**: Optional SQLite, PostgreSQL, or MongoDB persistence for mock data
 - 🔄 **CORS Proxy**: Bypass CORS limitations during development
 - 🔀 **Request/Response Transformation**: Transform data with field mapping, custom functions, and more
 - 🔌 **WebSocket Support**: Real-time mock events and WebSocket proxying
@@ -529,6 +530,7 @@ npm run lint:fix
 
 For detailed information, see the following guides:
 
+- [Database Guide](docs/DATABASE_GUIDE.md) - Database persistence for mock data (SQLite, PostgreSQL, MongoDB)
 - [Data Generation Guide](docs/DATA_GENERATION_GUIDE.md) - Generate realistic test data with Faker.js
 - [WebSocket Guide](docs/WEBSOCKET_GUIDE.md) - Real-time communication and WebSocket proxying
 - [Transformation Guide](docs/TRANSFORMATION_GUIDE.md) - Request/response data transformation

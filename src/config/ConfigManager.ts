@@ -243,7 +243,59 @@ export class ConfigManager {
           excludeHeaders: this.parseStringArray(env.RECORDING_EXCLUDE_HEADERS || ''),
         }
       }),
+      ...(env.DATABASE_ENABLED && {
+        database: {
+          enabled: env.DATABASE_ENABLED,
+          type: env.DATABASE_TYPE || 'sqlite',
+          connection: this.parseDatabaseConnection(env),
+          autoMigrate: env.DATABASE_AUTO_MIGRATE !== undefined ? env.DATABASE_AUTO_MIGRATE : true,
+          syncOnStartup: env.DATABASE_SYNC_ON_STARTUP !== undefined ? env.DATABASE_SYNC_ON_STARTUP : true,
+        }
+      }),
     };
+  }
+
+  /**
+   * Parse database connection configuration
+   */
+  private parseDatabaseConnection(env: any): any {
+    const dbType = env.DATABASE_TYPE || 'sqlite';
+
+    switch (dbType) {
+      case 'sqlite':
+        return {
+          filename: env.DATABASE_SQLITE_FILENAME || './data/mock-data.db',
+          memory: env.DATABASE_SQLITE_MEMORY || false,
+        };
+
+      case 'postgresql':
+        return {
+          host: env.DATABASE_PG_HOST || 'localhost',
+          port: env.DATABASE_PG_PORT ? parseInt(env.DATABASE_PG_PORT, 10) : 5432,
+          database: env.DATABASE_PG_DATABASE || 'mockapi',
+          username: env.DATABASE_PG_USERNAME || 'postgres',
+          password: env.DATABASE_PG_PASSWORD || '',
+          ssl: env.DATABASE_PG_SSL || false,
+          poolSize: env.DATABASE_PG_POOL_SIZE ? parseInt(env.DATABASE_PG_POOL_SIZE, 10) : 10,
+        };
+
+      case 'mongodb':
+        return {
+          uri: env.DATABASE_MONGO_URI || 'mongodb://localhost:27017',
+          database: env.DATABASE_MONGO_DATABASE || 'mockapi',
+          options: {
+            maxPoolSize: env.DATABASE_MONGO_MAX_POOL ? parseInt(env.DATABASE_MONGO_MAX_POOL, 10) : 10,
+            minPoolSize: env.DATABASE_MONGO_MIN_POOL ? parseInt(env.DATABASE_MONGO_MIN_POOL, 10) : 2,
+            serverSelectionTimeoutMS: env.DATABASE_MONGO_TIMEOUT ? parseInt(env.DATABASE_MONGO_TIMEOUT, 10) : 5000,
+          },
+        };
+
+      default:
+        return {
+          filename: './data/mock-data.db',
+          memory: false,
+        };
+    }
   }
 
   /**
