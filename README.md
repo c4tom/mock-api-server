@@ -7,6 +7,7 @@ A flexible backend server that can act as both a mock data server (similar to js
 - 🎭 **Mock Data Server**: Serve mock data through REST endpoints
 - 🔄 **CORS Proxy**: Bypass CORS limitations during development
 - 🔀 **Request/Response Transformation**: Transform data with field mapping, custom functions, and more
+- 🔌 **WebSocket Support**: Real-time mock events and WebSocket proxying
 - 🔐 **Flexible Authentication**: JWT, HTTP Basic, dev-token, or bypass modes
 - 🛡️ **Security Controls**: Rate limiting, origin validation, suspicious activity detection
 - 📝 **Request Logging**: Detailed logging with winston
@@ -365,6 +366,39 @@ AUTH_ENABLED=false
 - Check for syntax errors in .env file
 - Verify .env file is in the correct location
 - Check file permissions
+
+## WebSocket Support
+
+The server provides WebSocket support for real-time communication and WebSocket proxying. See the [WebSocket Guide](docs/WEBSOCKET_GUIDE.md) for detailed documentation.
+
+### Quick Example
+
+```javascript
+// Connect to WebSocket server
+const ws = new WebSocket('ws://localhost:3000/ws');
+
+// Subscribe to mock events
+ws.send(JSON.stringify({
+  type: 'subscribe',
+  event: 'ticker'
+}));
+
+// Receive real-time updates
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log('Received:', data);
+};
+```
+
+### Features
+
+- **Mock Events**: Send periodic or on-demand mock data to clients
+- **WebSocket Proxy**: Proxy WebSocket connections to external servers
+- **Real-time Updates**: Enable real-time features during development
+- **Event Subscriptions**: Subscribe/unsubscribe to specific events
+- **Heartbeat Support**: Automatic connection health monitoring
+
+Test the WebSocket functionality using the [WebSocket Test Client](docs/websocket-test-client.html).
 
 ## Request/Response Transformation
 

@@ -1,0 +1,48 @@
+[
+    {
+        "name": "ticker",
+        "interval": 2000,
+        "data": {
+            "symbol": "MOCK",
+            "price": 100.50,
+            "change": 1.25,
+            "volume": 1000000,
+            "timestamp": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "name": "notifications",
+        "interval": 5000,
+        "data": {
+            "id": 1,
+            "message": "System update available",
+            "type": "info",
+            "priority": "low",
+            "timestamp": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "name": "chat",
+        "interval": 3000,
+        "data": {
+            "user": "System",
+            "message": "Welcome to the chat!",
+            "room": "general",
+            "timestamp": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "name": "metrics",
+        "interval": 10000,
+        "data": {
+            "cpu": 45.2,
+            "memory": 62.8,
+            "disk": 78.5,
+            "network": {
+                "in": 1024,
+                "out": 2048
+            },
+            "timestamp": "2024-01-01T00:00:00Z"
+        }
+    }
+]

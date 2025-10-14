@@ -6,7 +6,7 @@ import {
   SecurityMiddleware,
   createTransformationMiddleware
 } from './middleware';
-import { AdminHandler, MockDataHandler, ProxyHandler } from './handlers';
+import { AdminHandler, MockDataHandler, ProxyHandler, WebSocketHandler } from './handlers';
 import { LoggingService } from './services';
 import { AppConfig } from './types';
 import { TransformationConfig } from './types/transformation';
@@ -46,6 +46,7 @@ let mockDataHandler: MockDataHandler;
 let proxyHandler: ProxyHandler;
 let securityMiddleware: SecurityMiddleware;
 let transformationMiddleware: ReturnType<typeof createTransformationMiddleware>;
+let webSocketHandler: WebSocketHandler | undefined;
 let server: any;
 
 /**
@@ -510,6 +511,33 @@ function setupRoutes() {
     // Server statistics
     app.get('/admin/stats', adminAuth, adminHandler.getServerStats);
 
+    // WebSocket statistics
+    app.get('/admin/websocket/stats', adminAuth, (req: Request, res: Response) => {
+      if (!webSocketHandler) {
+        res.status(404).json({
+          error: {
+            code: 'WEBSOCKET_NOT_ENABLED',
+            message: 'WebSocket server is not enabled',
+            timestamp: new Date().toISOString(),
+          }
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: {
+          enabled: true,
+          connectedClients: webSocketHandler.getConnectedClientsCount(),
+          proxyConnections: webSocketHandler.getProxyConnectionsCount(),
+        },
+        meta: {
+          timestamp: new Date().toISOString(),
+          requestId: (req as any).requestId
+        }
+      });
+    });
+
     // Recent request logs
     app.get('/admin/logs', adminAuth, (req: Request, res: Response) => {
       const limit = parseInt(req.query['limit'] as string) || 50;
@@ -710,6 +738,12 @@ function setupRoutes() {
 async function gracefulShutdown(signal: string): Promise<void> {
   logger.info(`${signal} received, initiating graceful shutdown`);
 
+  // Close WebSocket connections first
+  if (webSocketHandler) {
+    logger.info('Closing WebSocket connections');
+    webSocketHandler.close();
+  }
+
   // Stop accepting new connections
   if (server) {
     server.close((err: Error | undefined) => {
@@ -753,6 +787,15 @@ async function startServer() {
 
     // Check if port is available before binding
     server = app.listen(PORT, HOST, () => {
+      // Initialize WebSocket server if enabled
+      if (config.websocket?.enabled) {
+        webSocketHandler = new WebSocketHandler(server, config.websocket, logger);
+        logger.info('WebSocket server enabled', {
+          path: config.websocket.path,
+          proxyEnabled: config.websocket.proxyEnabled,
+        });
+      }
+
       logger.info('Mock API Server started successfully', {
         port: PORT,
         host: HOST,
@@ -761,6 +804,7 @@ async function startServer() {
         proxyEnabled: config.proxy.enabled,
         authEnabled: config.security.authentication.enabled,
         authType: config.security.authentication.type,
+        websocketEnabled: config.websocket?.enabled || false,
         nodeVersion: process.version,
         pid: process.pid
       });
@@ -772,6 +816,9 @@ async function startServer() {
       console.log(`Health check: http://${HOST}:${PORT}/health`);
       if (config.server.adminEnabled) {
         console.log(`Admin panel: http://${HOST}:${PORT}/admin/health`);
+      }
+      if (config.websocket?.enabled) {
+        console.log(`WebSocket URL: ws://${HOST}:${PORT}${config.websocket.path}`);
       }
       console.log(`Environment: ${config.server.environment}`);
       console.log(`Process ID: ${process.pid}`);

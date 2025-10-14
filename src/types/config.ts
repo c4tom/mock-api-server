@@ -9,6 +9,7 @@ export interface AppConfig {
   mock: MockConfig;
   proxy: ProxyConfig;
   logging: LoggingConfig;
+  websocket?: WebSocketConfig;
 }
 
 // Server configuration
@@ -106,6 +107,30 @@ export interface LoggingConfig {
   level: 'silent' | 'error' | 'warn' | 'info' | 'debug';
   format: 'json' | 'simple';
   file?: string;
+}
+
+// WebSocket configuration
+export interface WebSocketConfig {
+  enabled: boolean;
+  path: string;
+  mockEvents: WebSocketMockEvent[];
+  proxyEnabled: boolean;
+  proxyRoutes: Record<string, WebSocketProxyRoute>;
+  heartbeatInterval?: number;
+  maxPayloadSize?: number;
+}
+
+export interface WebSocketMockEvent {
+  name: string;
+  interval?: number;
+  data: any;
+  condition?: string;
+}
+
+export interface WebSocketProxyRoute {
+  name: string;
+  targetUrl: string;
+  auth?: ProxyAuth;
 }
 
 // Validation result interface

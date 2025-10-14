@@ -130,6 +130,32 @@ const loggingSchema = Joi.object({
   file: Joi.string().optional(),
 });
 
+// WebSocket mock event schema
+const webSocketMockEventSchema = Joi.object({
+  name: Joi.string().required(),
+  interval: Joi.number().positive().optional(),
+  data: Joi.any().required(),
+  condition: Joi.string().optional(),
+});
+
+// WebSocket proxy route schema
+const webSocketProxyRouteSchema = Joi.object({
+  name: Joi.string().required(),
+  targetUrl: Joi.string().uri().required(),
+  auth: proxyAuthSchema.optional(),
+});
+
+// WebSocket configuration schema
+const webSocketSchema = Joi.object({
+  enabled: Joi.boolean().required(),
+  path: Joi.string().required(),
+  mockEvents: Joi.array().items(webSocketMockEventSchema).required(),
+  proxyEnabled: Joi.boolean().required(),
+  proxyRoutes: Joi.object().pattern(Joi.string(), webSocketProxyRouteSchema).required(),
+  heartbeatInterval: Joi.number().positive().optional(),
+  maxPayloadSize: Joi.number().positive().optional(),
+});
+
 // Main application configuration schema
 export const appConfigSchema = Joi.object({
   server: serverSchema.required(),
@@ -137,6 +163,7 @@ export const appConfigSchema = Joi.object({
   mock: mockSchema.required(),
   proxy: proxySchema.required(),
   logging: loggingSchema.required(),
+  websocket: webSocketSchema.optional(),
 });
 
 // Environment variables schema for validation
@@ -144,7 +171,7 @@ export const envSchema = Joi.object({
   NODE_ENV: Joi.string().valid('development', 'production').default('development'),
   PORT: Joi.number().port().default(3000),
   HOST: Joi.string().default('localhost'),
-  
+
   // Authentication
   AUTH_ENABLED: Joi.boolean().default(false),
   AUTH_TYPE: Joi.string().valid('jwt', 'basic', 'dev-token', 'bypass', 'disabled').default('disabled'),
@@ -152,21 +179,21 @@ export const envSchema = Joi.object({
   DEV_TOKEN: Joi.string().optional(),
   BASIC_USERNAME: Joi.string().optional(),
   BASIC_PASSWORD: Joi.string().optional(),
-  
+
   // CORS
   CORS_ORIGINS: Joi.string().default('*'),
   CORS_CREDENTIALS: Joi.boolean().default(false),
-  
+
   // Rate Limiting
   RATE_LIMIT_WINDOW: Joi.number().positive().default(900000), // 15 minutes
   RATE_LIMIT_MAX: Joi.number().positive().default(100),
   RATE_LIMIT_SKIP_SUCCESS: Joi.boolean().default(false),
-  
+
   // Mock Data
   MOCK_DATA_PATH: Joi.string().default('./data/mock'),
   ENABLE_CRUD: Joi.boolean().default(true),
   DEFAULT_DELAY: Joi.number().min(0).default(0),
-  
+
   // Proxy
   PROXY_ENABLED: Joi.boolean().default(true),
   PROXY_TIMEOUT: Joi.number().positive().default(5000),
@@ -174,12 +201,21 @@ export const envSchema = Joi.object({
   PROXY_ROUTES: Joi.string().allow('').default(''),
   PROXY_ALLOWED_DOMAINS: Joi.string().allow('').default(''),
   PROXY_BLOCKED_DOMAINS: Joi.string().allow('').default(''),
-  
+
   // Logging
   LOG_LEVEL: Joi.string().valid('silent', 'error', 'warn', 'info', 'debug').default('info'),
   LOG_FORMAT: Joi.string().valid('json', 'simple').default('simple'),
   LOG_FILE: Joi.string().optional(),
-  
+
   // Admin
   ADMIN_ENABLED: Joi.boolean().default(true),
+
+  // WebSocket
+  WEBSOCKET_ENABLED: Joi.boolean().default(false),
+  WEBSOCKET_PATH: Joi.string().default('/ws'),
+  WEBSOCKET_MOCK_EVENTS: Joi.string().allow('').default(''),
+  WEBSOCKET_PROXY_ENABLED: Joi.boolean().default(false),
+  WEBSOCKET_PROXY_ROUTES: Joi.string().allow('').default(''),
+  WEBSOCKET_HEARTBEAT_INTERVAL: Joi.number().positive().optional(),
+  WEBSOCKET_MAX_PAYLOAD: Joi.number().positive().optional(),
 }).unknown(true); // Allow unknown environment variables

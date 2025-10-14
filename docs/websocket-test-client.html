@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test Client - Mock API Server</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .connection-panel {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: inline-block;
+            width: 120px;
+            font-weight: 500;
+        }
+
+        input[type="text"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 400px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-right: 10px;
+        }
+
+        .btn-connect {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-disconnect {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-send {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-clear {
+            background: #9E9E9E;
+            color: white;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+
+        .status.connected {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .status.disconnected {
+            background: #f44336;
+            color: white;
+        }
+
+        .panels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .panel {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+        }
+
+        .panel h2 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .message-log {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .message {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .message.sent {
+            background: #E3F2FD;
+            border-left: 3px solid #2196F3;
+        }
+
+        .message.received {
+            background: #E8F5E9;
+            border-left: 3px solid #4CAF50;
+        }
+
+        .message.error {
+            background: #FFEBEE;
+            border-left: 3px solid #f44336;
+        }
+
+        .message-time {
+            color: #666;
+            font-size: 10px;
+        }
+
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .quick-action {
+            padding: 6px 12px;
+            background: #E0E0E0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .quick-action:hover {
+            background: #BDBDBD;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .stat {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2196F3;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>WebSocket Test Client</h1>
+
+        <div class="connection-panel">
+            <div class="input-group">
+                <label>WebSocket URL:</label>
+                <input type="text" id="wsUrl" value="ws://localhost:3000/ws">
+                <span class="status disconnected" id="status">Disconnected</span>
+            </div>
+            <div>
+                <button class="btn-connect" id="connectBtn" onclick="connect()">Connect</button>
+                <button class="btn-disconnect" id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="sentCount">0</div>
+                <div class="stat-label">Messages Sent</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="receivedCount">0</div>
+                <div class="stat-label">Messages Received</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="errorCount">0</div>
+                <div class="stat-label">Errors</div>
+            </div>
+        </div>
+
+        <div class="panels">
+            <div class="panel">
+                <h2>Send Message</h2>
+                <textarea id="messageInput" rows="10" placeholder='{"type": "ping"}'></textarea>
+                <div style="margin-top: 10px;">
+                    <button class="btn-send" onclick="sendMessage()" id="sendBtn" disabled>Send Message</button>
+                </div>
+
+                <h3 style="margin-top: 20px; font-size: 14px;">Quick Actions</h3>
+                <div class="quick-actions">
+                    <button class="quick-action" onclick="quickAction('ping')">Ping</button>
+                    <button class="quick-action" onclick="quickAction('subscribe', 'ticker')">Subscribe Ticker</button>
+                    <button class="quick-action" onclick="quickAction('subscribe', 'notifications')">Subscribe
+                        Notifications</button>
+                    <button class="quick-action" onclick="quickAction('unsubscribe', 'ticker')">Unsubscribe
+                        Ticker</button>
+                    <button class="quick-action" onclick="quickAction('request', 'ticker')">Request Ticker</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Message Log</h2>
+                <div class="message-log" id="messageLog"></div>
+                <div style="margin-top: 10px;">
+                    <button class="btn-clear" onclick="clearLog()">Clear Log</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let sentCount = 0;
+        let receivedCount = 0;
+        let errorCount = 0;
+
+        function connect() {
+            const url = document.getElementById('wsUrl').value;
+
+            try {
+                ws = new WebSocket(url);
+
+                ws.onopen = () => {
+                    updateStatus(true);
+                    logMessage('Connected to ' + url, 'received');
+                };
+
+                ws.onmessage = (event) => {
+                    receivedCount++;
+                    updateStats();
+
+                    try {
+                        const data = JSON.parse(event.data);
+                        logMessage('Received: ' + JSON.stringify(data, null, 2), 'received');
+                    } catch (e) {
+                        logMessage('Received: ' + event.data, 'received');
+                    }
+                };
+
+                ws.onerror = (error) => {
+                    errorCount++;
+                    updateStats();
+                    logMessage('Error: ' + error, 'error');
+                };
+
+                ws.onclose = () => {
+                    updateStatus(false);
+                    logMessage('Disconnected', 'error');
+                };
+            } catch (error) {
+                errorCount++;
+                updateStats();
+                logMessage('Connection error: ' + error.message, 'error');
+            }
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function sendMessage() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                logMessage('Not connected', 'error');
+                return;
+            }
+
+            const message = document.getElementById('messageInput').value;
+
+            try {
+                ws.send(message);
+                sentCount++;
+                updateStats();
+                logMessage('Sent: ' + message, 'sent');
+            } catch (error) {
+                errorCount++;
+                updateStats();
+                logMessage('Send error: ' + error.message, 'error');
+            }
+        }
+
+        function quickAction(type, event) {
+            const message = event
+                ? JSON.stringify({ type, event }, null, 2)
+                : JSON.stringify({ type }, null, 2);
+
+            document.getElementById('messageInput').value = message;
+            sendMessage();
+        }
+
+        function updateStatus(connected) {
+            const status = document.getElementById('status');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            const sendBtn = document.getElementById('sendBtn');
+
+            if (connected) {
+                status.textContent = 'Connected';
+                status.className = 'status connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                sendBtn.disabled = false;
+            } else {
+                status.textContent = 'Disconnected';
+                status.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                sendBtn.disabled = true;
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('sentCount').textContent = sentCount;
+            document.getElementById('receivedCount').textContent = receivedCount;
+            document.getElementById('errorCount').textContent = errorCount;
+        }
+
+        function logMessage(message, type) {
+            const log = document.getElementById('messageLog');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + type;
+
+            const time = new Date().toLocaleTimeString();
+            messageDiv.innerHTML = `
+                <div class="message-time">${time}</div>
+                <div>${message}</div>
+            `;
+
+            log.appendChild(messageDiv);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('messageLog').innerHTML = '';
+            sentCount = 0;
+            receivedCount = 0;
+            errorCount = 0;
+            updateStats();
+        }
+
+        // Initialize with a sample message
+        document.getElementById('messageInput').value = JSON.stringify({
+            type: 'ping'
+        }, null, 2);
+    </script>
+</body>
+
+</html>

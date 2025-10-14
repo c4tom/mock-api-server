@@ -356,7 +356,11 @@ These tasks represent potential improvements beyond the current requirements. Th
 
 
 
-- [ ] 13. WebSocket support
+- [x] 13. WebSocket support
+
+
+
+
   - Add WebSocket server for real-time mock data
   - Support for mock WebSocket events
   - Proxy WebSocket connections

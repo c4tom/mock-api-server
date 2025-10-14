@@ -208,6 +208,17 @@ export class ConfigManager {
         format: env.LOG_FORMAT,
         file: env.LOG_FILE,
       },
+      ...(env.WEBSOCKET_ENABLED && {
+        websocket: {
+          enabled: env.WEBSOCKET_ENABLED,
+          path: env.WEBSOCKET_PATH || '/ws',
+          mockEvents: this.parseWebSocketMockEvents(env.WEBSOCKET_MOCK_EVENTS),
+          proxyEnabled: env.WEBSOCKET_PROXY_ENABLED || false,
+          proxyRoutes: this.parseWebSocketProxyRoutes(env.WEBSOCKET_PROXY_ROUTES),
+          heartbeatInterval: env.WEBSOCKET_HEARTBEAT_INTERVAL ? parseInt(env.WEBSOCKET_HEARTBEAT_INTERVAL, 10) : undefined,
+          maxPayloadSize: env.WEBSOCKET_MAX_PAYLOAD ? parseInt(env.WEBSOCKET_MAX_PAYLOAD, 10) : undefined,
+        }
+      }),
     };
   }
 
@@ -219,6 +230,48 @@ export class ConfigManager {
       return [];
     }
     return value.split(',').map(item => item.trim()).filter(item => item.length > 0);
+  }
+
+  /**
+   * Parse WebSocket mock events from JSON string
+   */
+  private parseWebSocketMockEvents(value: string | undefined): any[] {
+    if (!value || value.trim() === '') {
+      return [];
+    }
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      console.error('Failed to parse WebSocket mock events:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Parse WebSocket proxy routes from environment variable
+   */
+  private parseWebSocketProxyRoutes(value: string | undefined): Record<string, any> {
+    if (!value || value.trim() === '') {
+      return {};
+    }
+    try {
+      // Format: name1:url1,name2:url2
+      const routes: Record<string, any> = {};
+      const pairs = value.split(',');
+      pairs.forEach(pair => {
+        const [name, targetUrl] = pair.split(':').map(s => s.trim());
+        if (name && targetUrl) {
+          routes[name] = {
+            name,
+            targetUrl,
+          };
+        }
+      });
+      return routes;
+    } catch (error) {
+      console.error('Failed to parse WebSocket proxy routes:', error);
+      return {};
+    }
   }
 
 
