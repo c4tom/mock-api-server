@@ -1,0 +1,59 @@
+{
+    "endpoint": "/api/users",
+    "method": "GET",
+    "statusCode": 200,
+    "delay": 0,
+    "headers": {
+        "Content-Type": "application/json"
+    },
+    "response": [
+        {
+            "id": 1,
+            "username": "johndoe",
+            "email": "john.doe@example.com",
+            "firstName": "John",
+            "lastName": "Doe",
+            "avatar": "https://i.pravatar.cc/150?img=1",
+            "role": "admin",
+            "createdAt": "2024-01-15T10:30:00Z",
+            "isActive": true,
+            "profile": {
+                "bio": "Software developer and tech enthusiast",
+                "location": "San Francisco, CA",
+                "website": "https://johndoe.dev"
+            }
+        },
+        {
+            "id": 2,
+            "username": "janedoe",
+            "email": "jane.doe@example.com",
+            "firstName": "Jane",
+            "lastName": "Doe",
+            "avatar": "https://i.pravatar.cc/150?img=2",
+            "role": "user",
+            "createdAt": "2024-02-20T14:45:00Z",
+            "isActive": true,
+            "profile": {
+                "bio": "Designer and creative thinker",
+                "location": "New York, NY",
+                "website": "https://janedoe.design"
+            }
+        },
+        {
+            "id": 3,
+            "username": "bobsmith",
+            "email": "bob.smith@example.com",
+            "firstName": "Bob",
+            "lastName": "Smith",
+            "avatar": "https://i.pravatar.cc/150?img=3",
+            "role": "user",
+            "createdAt": "2024-03-10T09:15:00Z",
+            "isActive": false,
+            "profile": {
+                "bio": "Product manager with a passion for innovation",
+                "location": "Austin, TX",
+                "website": null
+            }
+        }
+    ]
+}

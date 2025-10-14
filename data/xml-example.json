@@ -1,0 +1,10 @@
+{
+    "endpoint": "/api/books",
+    "method": "GET",
+    "statusCode": 200,
+    "delay": 0,
+    "headers": {
+        "Content-Type": "application/xml"
+    },
+    "response": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<books>\n  <book id=\"1\">\n    <title>The TypeScript Handbook</title>\n    <author>Microsoft Team</author>\n    <isbn>978-1234567890</isbn>\n    <price currency=\"USD\">49.99</price>\n    <published>2023-05-15</published>\n    <categories>\n      <category>Programming</category>\n      <category>Web Development</category>\n    </categories>\n  </book>\n  <book id=\"2\">\n    <title>Node.js Design Patterns</title>\n    <author>Mario Casciaro</author>\n    <isbn>978-0987654321</isbn>\n    <price currency=\"USD\">59.99</price>\n    <published>2023-08-20</published>\n    <categories>\n      <category>Programming</category>\n      <category>Backend</category>\n    </categories>\n  </book>\n</books>"
+}

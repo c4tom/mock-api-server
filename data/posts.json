@@ -1,0 +1,76 @@
+{
+    "endpoint": "/api/posts",
+    "method": "GET",
+    "statusCode": 200,
+    "delay": 100,
+    "headers": {
+        "Content-Type": "application/json"
+    },
+    "response": [
+        {
+            "id": 1,
+            "userId": 1,
+            "title": "Getting Started with TypeScript",
+            "body": "TypeScript is a powerful superset of JavaScript that adds static typing. In this post, we'll explore the basics and why you should consider using it in your next project.",
+            "slug": "getting-started-with-typescript",
+            "tags": [
+                "typescript",
+                "javascript",
+                "programming"
+            ],
+            "published": true,
+            "publishedAt": "2024-01-20T12:00:00Z",
+            "views": 1523,
+            "likes": 89,
+            "comments": [
+                {
+                    "id": 1,
+                    "userId": 2,
+                    "text": "Great introduction! Very helpful for beginners.",
+                    "createdAt": "2024-01-21T08:30:00Z"
+                },
+                {
+                    "id": 2,
+                    "userId": 3,
+                    "text": "Can you cover advanced types in the next post?",
+                    "createdAt": "2024-01-22T14:15:00Z"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "userId": 1,
+            "title": "Building RESTful APIs with Express",
+            "body": "Express.js is a minimal and flexible Node.js web application framework. Learn how to build robust RESTful APIs with proper error handling and middleware.",
+            "slug": "building-restful-apis-with-express",
+            "tags": [
+                "express",
+                "nodejs",
+                "api",
+                "rest"
+            ],
+            "published": true,
+            "publishedAt": "2024-02-15T10:30:00Z",
+            "views": 2341,
+            "likes": 156,
+            "comments": []
+        },
+        {
+            "id": 3,
+            "userId": 2,
+            "title": "Design Patterns Every Developer Should Know",
+            "body": "Design patterns are reusable solutions to common problems in software design. This post covers the most important patterns with practical examples.",
+            "slug": "design-patterns-every-developer-should-know",
+            "tags": [
+                "design-patterns",
+                "software-engineering",
+                "best-practices"
+            ],
+            "published": false,
+            "publishedAt": null,
+            "views": 0,
+            "likes": 0,
+            "comments": []
+        }
+    ]
+}

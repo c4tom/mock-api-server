@@ -1,0 +1,60 @@
+{
+    "endpoint": "/api/todos",
+    "method": "GET",
+    "statusCode": 200,
+    "delay": 0,
+    "headers": {
+        "Content-Type": "application/json"
+    },
+    "response": [
+        {
+            "id": 1,
+            "userId": 1,
+            "title": "Complete project documentation",
+            "completed": false,
+            "priority": "high",
+            "dueDate": "2024-10-20T17:00:00Z",
+            "tags": [
+                "work",
+                "documentation"
+            ]
+        },
+        {
+            "id": 2,
+            "userId": 1,
+            "title": "Review pull requests",
+            "completed": true,
+            "priority": "medium",
+            "dueDate": "2024-10-15T12:00:00Z",
+            "tags": [
+                "work",
+                "code-review"
+            ]
+        },
+        {
+            "id": 3,
+            "userId": 2,
+            "title": "Update design mockups",
+            "completed": false,
+            "priority": "high",
+            "dueDate": "2024-10-18T15:00:00Z",
+            "tags": [
+                "design",
+                "ui"
+            ]
+        },
+        {
+            "id": 4,
+            "userId": 1,
+            "title": "Fix authentication bug",
+            "completed": false,
+            "priority": "critical",
+            "dueDate": "2024-10-16T09:00:00Z",
+            "tags": [
+                "work",
+                "bug",
+                "security"
+            ]
+        }
+    ]
+}

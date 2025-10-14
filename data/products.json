@@ -1,0 +1,84 @@
+{
+    "endpoint": "/api/products",
+    "method": "GET",
+    "statusCode": 200,
+    "delay": 50,
+    "headers": {
+        "Content-Type": "application/json"
+    },
+    "response": [
+        {
+            "id": 1,
+            "name": "Wireless Headphones",
+            "description": "Premium noise-cancelling wireless headphones with 30-hour battery life",
+            "price": 299.99,
+            "currency": "USD",
+            "category": "Electronics",
+            "sku": "WH-1000XM5",
+            "inStock": true,
+            "quantity": 45,
+            "images": [
+                "https://via.placeholder.com/400x400?text=Headphones+Front",
+                "https://via.placeholder.com/400x400?text=Headphones+Side"
+            ],
+            "specifications": {
+                "brand": "TechAudio",
+                "color": "Black",
+                "weight": "250g",
+                "connectivity": "Bluetooth 5.0"
+            },
+            "ratings": {
+                "average": 4.7,
+                "count": 1234
+            }
+        },
+        {
+            "id": 2,
+            "name": "Smart Watch Pro",
+            "description": "Advanced fitness tracking with heart rate monitor and GPS",
+            "price": 399.99,
+            "currency": "USD",
+            "category": "Wearables",
+            "sku": "SW-PRO-2024",
+            "inStock": true,
+            "quantity": 23,
+            "images": [
+                "https://via.placeholder.com/400x400?text=Watch+Front"
+            ],
+            "specifications": {
+                "brand": "FitTech",
+                "color": "Silver",
+                "weight": "45g",
+                "batteryLife": "7 days"
+            },
+            "ratings": {
+                "average": 4.5,
+                "count": 892
+            }
+        },
+        {
+            "id": 3,
+            "name": "Mechanical Keyboard",
+            "description": "RGB backlit mechanical keyboard with Cherry MX switches",
+            "price": 149.99,
+            "currency": "USD",
+            "category": "Accessories",
+            "sku": "KB-MECH-RGB",
+            "inStock": false,
+            "quantity": 0,
+            "images": [
+                "https://via.placeholder.com/400x400?text=Keyboard"
+            ],
+            "specifications": {
+                "brand": "KeyMaster",
+                "color": "Black",
+                "switchType": "Cherry MX Blue",
+                "layout": "Full-size"
+            },
+            "ratings": {
+                "average": 4.8,
+                "count": 567
+            }
+        }
+    ]
+}

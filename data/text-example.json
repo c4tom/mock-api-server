@@ -1,0 +1,10 @@
+{
+    "endpoint": "/api/status",
+    "method": "GET",
+    "statusCode": 200,
+    "delay": 0,
+    "headers": {
+        "Content-Type": "text/plain"
+    },
+    "response": "Server Status: OK\nUptime: 99.9%\nLast Check: 2024-10-14T12:00:00Z\nActive Connections: 42\nMemory Usage: 512MB / 2GB\nCPU Usage: 23%"
+}

@@ -1,0 +1,104 @@
+{
+    "endpoint": "/api/organizations",
+    "method": "GET",
+    "statusCode": 200,
+    "delay": 150,
+    "headers": {
+        "Content-Type": "application/json"
+    },
+    "response": [
+        {
+            "id": 1,
+            "name": "TechCorp Inc",
+            "type": "Technology",
+            "founded": "2010-03-15",
+            "headquarters": {
+                "address": "123 Tech Street",
+                "city": "San Francisco",
+                "state": "CA",
+                "country": "USA",
+                "zipCode": "94105"
+            },
+            "departments": [
+                {
+                    "id": 101,
+                    "name": "Engineering",
+                    "headCount": 150,
+                    "manager": {
+                        "id": 1,
+                        "name": "John Doe",
+                        "email": "john.doe@techcorp.com"
+                    },
+                    "teams": [
+                        {
+                            "id": 1001,
+                            "name": "Backend Team",
+                            "members": 12,
+                            "technologies": [
+                                "Node.js",
+                                "TypeScript",
+                                "PostgreSQL"
+                            ]
+                        },
+                        {
+                            "id": 1002,
+                            "name": "Frontend Team",
+                            "members": 10,
+                            "technologies": [
+                                "React",
+                                "TypeScript",
+                                "CSS"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": 102,
+                    "name": "Product",
+                    "headCount": 45,
+                    "manager": {
+                        "id": 2,
+                        "name": "Jane Doe",
+                        "email": "jane.doe@techcorp.com"
+                    },
+                    "teams": [
+                        {
+                            "id": 1003,
+                            "name": "Product Management",
+                            "members": 8,
+                            "technologies": [
+                                "Jira",
+                                "Figma",
+                                "Analytics"
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "projects": [
+                {
+                    "id": 501,
+                    "name": "Project Alpha",
+                    "status": "active",
+                    "startDate": "2024-01-01",
+                    "budget": 500000,
+                    "departmentId": 101,
+                    "milestones": [
+                        {
+                            "id": 5001,
+                            "name": "MVP Release",
+                            "dueDate": "2024-06-30",
+                            "completed": true
+                        },
+                        {
+                            "id": 5002,
+                            "name": "Beta Launch",
+                            "dueDate": "2024-09-30",
+                            "completed": false
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
