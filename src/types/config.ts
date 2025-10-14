@@ -72,6 +72,17 @@ export interface MockConfig {
   endpoints: MockEndpoint[];
   defaultDelay: number;
   enableCrud: boolean;
+  versioning?: VersioningConfig;
+}
+
+// API versioning configuration
+export interface VersioningConfig {
+  enabled: boolean;
+  defaultVersion?: string;
+  supportedVersions: string[];
+  versionHeader?: string; // Header name for version negotiation (default: 'API-Version')
+  versionPrefix?: string; // URL prefix for version (e.g., '/v1', '/v2')
+  strictMode?: boolean; // If true, reject requests without version
 }
 
 export interface MockEndpoint {
@@ -81,6 +92,7 @@ export interface MockEndpoint {
   statusCode: number;
   headers?: Record<string, string>;
   delay?: number;
+  version?: string;
 }
 
 // Proxy configuration

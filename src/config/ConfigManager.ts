@@ -201,6 +201,16 @@ export class ConfigManager {
         endpoints: [], // Will be loaded separately from JSON files
         defaultDelay: parseInt(env.DEFAULT_DELAY, 10),
         enableCrud: env.ENABLE_CRUD,
+        ...(env.VERSIONING_ENABLED && {
+          versioning: {
+            enabled: env.VERSIONING_ENABLED,
+            defaultVersion: env.VERSIONING_DEFAULT_VERSION || undefined,
+            supportedVersions: this.parseStringArray(env.VERSIONING_SUPPORTED_VERSIONS || 'v1'),
+            versionHeader: env.VERSIONING_HEADER || 'API-Version',
+            versionPrefix: env.VERSIONING_PREFIX !== undefined ? env.VERSIONING_PREFIX : true,
+            strictMode: env.VERSIONING_STRICT_MODE || false,
+          }
+        }),
       },
       proxy: ProxyConfigParser.buildProxyConfig(env),
       logging: {

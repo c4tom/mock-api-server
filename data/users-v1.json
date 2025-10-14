@@ -1,0 +1,33 @@
+{
+    "name": "Users API v1",
+    "version": "v1",
+    "endpoints": [
+        {
+            "method": "GET",
+            "path": "/users",
+            "response": [
+                {
+                    "id": 1,
+                    "name": "John Doe",
+                    "email": "john@example.com"
+                },
+                {
+                    "id": 2,
+                    "name": "Jane Smith",
+                    "email": "jane@example.com"
+                }
+            ],
+            "statusCode": 200
+        },
+        {
+            "method": "GET",
+            "path": "/users/:id",
+            "response": {
+                "id": 1,
+                "name": "John Doe",
+                "email": "john@example.com"
+            },
+            "statusCode": 200
+        }
+    ]
+}

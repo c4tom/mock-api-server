@@ -10,6 +10,7 @@ Complete documentation for the Mock API Server.
 - [Proxy Guide](./PROXY_GUIDE.md) - CORS proxy configuration and usage
 - [Cache Guide](./CACHE_GUIDE.md) - Response caching configuration and usage
 - [Transformation Guide](./TRANSFORMATION_GUIDE.md) - Request/response transformation
+- [Versioning Guide](./VERSIONING_GUIDE.md) - API versioning support
 - [Security Guide](./SECURITY_GUIDE.md) - Security configuration and best practices
 - [Troubleshooting](./TROUBLESHOOTING.md) - Common issues and solutions
 - [Configuration Examples](../CONFIG_EXAMPLES.md) - Example configurations for different environments
@@ -63,6 +64,17 @@ See [Transformation Guide](./TRANSFORMATION_GUIDE.md) for:
 - Response wrapping
 - Path matching patterns
 - Transformation examples and use cases
+
+### API Versioning
+
+See [Versioning Guide](./VERSIONING_GUIDE.md) for:
+- Multiple API versions support
+- Header-based version negotiation
+- URL prefix versioning
+- Version-specific mock data
+- Default version configuration
+- Strict mode and validation
+- Migration strategies
 
 ### Dashboard
 

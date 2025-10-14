@@ -1,0 +1,51 @@
+{
+    "name": "Users API v2",
+    "version": "v2",
+    "endpoints": [
+        {
+            "method": "GET",
+            "path": "/users",
+            "response": [
+                {
+                    "id": 1,
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "email": "john@example.com",
+                    "profile": {
+                        "avatar": "https://example.com/avatars/john.jpg",
+                        "bio": "Software developer"
+                    },
+                    "createdAt": "2024-01-01T00:00:00Z"
+                },
+                {
+                    "id": 2,
+                    "firstName": "Jane",
+                    "lastName": "Smith",
+                    "email": "jane@example.com",
+                    "profile": {
+                        "avatar": "https://example.com/avatars/jane.jpg",
+                        "bio": "Product manager"
+                    },
+                    "createdAt": "2024-01-02T00:00:00Z"
+                }
+            ],
+            "statusCode": 200
+        },
+        {
+            "method": "GET",
+            "path": "/users/:id",
+            "response": {
+                "id": 1,
+                "firstName": "John",
+                "lastName": "Doe",
+                "email": "john@example.com",
+                "profile": {
+                    "avatar": "https://example.com/avatars/john.jpg",
+                    "bio": "Software developer"
+                },
+                "createdAt": "2024-01-01T00:00:00Z"
+            },
+            "statusCode": 200
+        }
+    ]
+}

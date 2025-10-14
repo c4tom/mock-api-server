@@ -33,7 +33,7 @@ export class MockDataHandler implements IMockDataHandler {
 
     constructor(config: MockConfig, databaseConfig?: DatabaseConfig) {
         this.config = config;
-        this.mockData = { endpoints: {} };
+        this.mockData = { endpoints: {}, versions: {} };
         this.storage = {};
         this.dataGenerator = new DataGeneratorService();
 
@@ -80,10 +80,45 @@ export class MockDataHandler implements IMockDataHandler {
     async handleRequest(req: Request, res: Response): Promise<void> {
         try {
             const context = this.createRequestContext(req);
+
+            // Validate version if versioning is enabled
+            if (this.config.versioning?.enabled) {
+                if (this.config.versioning.strictMode && !context.version) {
+                    res.status(400).json({
+                        error: {
+                            code: 'VERSION_REQUIRED',
+                            message: 'API version is required',
+                            timestamp: new Date().toISOString(),
+                            suggestions: [
+                                `Set ${this.config.versioning.versionHeader || 'API-Version'} header`,
+                                `Use URL prefix: ${this.config.versioning.versionPrefix || '/v{version}'}`,
+                                `Supported versions: ${this.config.versioning.supportedVersions.join(', ')}`
+                            ]
+                        }
+                    });
+                    return;
+                }
+
+                if (context.version && !this.isVersionSupported(context.version)) {
+                    res.status(400).json({
+                        error: {
+                            code: 'UNSUPPORTED_VERSION',
+                            message: `API version '${context.version}' is not supported`,
+                            timestamp: new Date().toISOString(),
+                            supportedVersions: this.config.versioning.supportedVersions,
+                            suggestions: [
+                                `Use one of the supported versions: ${this.config.versioning.supportedVersions.join(', ')}`
+                            ]
+                        }
+                    });
+                    return;
+                }
+            }
+
             const endpoint = this.findMatchingEndpoint(context);
 
             if (!endpoint) {
-                this.sendNotFoundResponse(res, context.path);
+                this.sendNotFoundResponse(res, context.path, context.version);
                 return;
             }
 
@@ -117,24 +152,59 @@ export class MockDataHandler implements IMockDataHandler {
      */
     async loadMockData(): Promise<MockDataSet> {
         try {
-            const mockDataSet: MockDataSet = { endpoints: {} };
+            const mockDataSet: MockDataSet = { endpoints: {}, versions: {} };
+
+            // Initialize versions if versioning is enabled
+            if (this.config.versioning?.enabled) {
+                for (const version of this.config.versioning.supportedVersions) {
+                    const normalizedVersion = this.normalizeVersion(version);
+                    mockDataSet.versions![normalizedVersion] = {
+                        version: normalizedVersion,
+                        endpoints: {}
+                    };
+                }
+            }
 
             // Load endpoints from configuration
             if (this.config.endpoints && this.config.endpoints.length > 0) {
                 for (const endpoint of this.config.endpoints) {
-                    const key = this.createEndpointKey(endpoint.method, endpoint.path);
-                    mockDataSet.endpoints[key] = {
+                    const extendedEndpoint: ExtendedMockEndpoint = {
                         ...endpoint,
                         delay: endpoint.delay ?? this.config.defaultDelay,
-                        contentType: this.determineContentType(endpoint.headers)
-                    } as ExtendedMockEndpoint;
+                        contentType: this.determineContentType(endpoint.headers),
+                        ...(endpoint.version && { version: endpoint.version })
+                    };
+
+                    // If endpoint has a version, add to versioned endpoints
+                    if (endpoint.version && mockDataSet.versions) {
+                        const normalizedVersion = this.normalizeVersion(endpoint.version);
+                        if (mockDataSet.versions[normalizedVersion]) {
+                            const key = this.createEndpointKey(endpoint.method, endpoint.path);
+                            mockDataSet.versions[normalizedVersion].endpoints[key] = extendedEndpoint;
+                        }
+                    } else {
+                        // Add to general endpoints
+                        const key = this.createEndpointKey(endpoint.method, endpoint.path);
+                        mockDataSet.endpoints[key] = extendedEndpoint;
+                    }
                 }
             }
 
             // Load endpoints from JSON files
             if (this.config.dataPath && existsSync(this.config.dataPath)) {
                 const fileEndpoints = await this.loadFromJsonFiles();
-                Object.assign(mockDataSet.endpoints, fileEndpoints);
+
+                // Merge file endpoints into mockDataSet
+                for (const [key, endpoint] of Object.entries(fileEndpoints)) {
+                    if (endpoint.version && mockDataSet.versions) {
+                        const normalizedVersion = this.normalizeVersion(endpoint.version);
+                        if (mockDataSet.versions[normalizedVersion]) {
+                            mockDataSet.versions[normalizedVersion].endpoints[key] = endpoint;
+                        }
+                    } else {
+                        mockDataSet.endpoints[key] = endpoint;
+                    }
+                }
             }
 
             this.mockData = mockDataSet;
@@ -204,28 +274,131 @@ export class MockDataHandler implements IMockDataHandler {
      * Create request context from Express request
      */
     private createRequestContext(req: Request): MockRequestContext {
-        return {
+        const version = this.extractVersion(req);
+
+        const context: MockRequestContext = {
             method: req.method.toUpperCase(),
             path: req.path,
             query: req.query as Record<string, any>,
             body: req.body,
             headers: req.headers as Record<string, string>
         };
+
+        if (version) {
+            context.version = version;
+        }
+
+        return context;
+    }
+
+    /**
+     * Extract API version from request
+     * Supports both header-based and URL-based versioning
+     */
+    private extractVersion(req: Request): string | undefined {
+        if (!this.config.versioning?.enabled) {
+            return undefined;
+        }
+
+        const versionConfig = this.config.versioning;
+
+        // 1. Check version header (e.g., API-Version: v1)
+        const headerName = versionConfig.versionHeader || 'API-Version';
+        const headerVersion = req.headers[headerName.toLowerCase()] as string;
+        if (headerVersion) {
+            return this.normalizeVersion(headerVersion);
+        }
+
+        // 2. Check URL prefix (e.g., /v1/users)
+        if (versionConfig.versionPrefix) {
+            const pathParts = req.path.split('/').filter(p => p);
+            if (pathParts.length > 0) {
+                const firstPart = pathParts[0];
+                // Check if first part matches version pattern (v1, v2, etc.)
+                if (firstPart && /^v\d+$/i.test(firstPart)) {
+                    return this.normalizeVersion(firstPart);
+                }
+            }
+        }
+
+        // 3. Use default version if configured
+        return versionConfig.defaultVersion;
+    }
+
+    /**
+     * Normalize version string (e.g., "v1", "1", "V1" -> "v1")
+     */
+    private normalizeVersion(version: string): string {
+        const normalized = version.toLowerCase().trim();
+        return normalized.startsWith('v') ? normalized : `v${normalized}`;
+    }
+
+    /**
+     * Validate if version is supported
+     */
+    private isVersionSupported(version?: string): boolean {
+        if (!this.config.versioning?.enabled || !version) {
+            return true;
+        }
+
+        const supportedVersions = this.config.versioning.supportedVersions.map(v =>
+            this.normalizeVersion(v)
+        );
+
+        return supportedVersions.includes(this.normalizeVersion(version));
     }
 
     /**
      * Find matching endpoint for request
      */
     private findMatchingEndpoint(context: MockRequestContext): MockEndpoint | null {
+        // Normalize path by removing version prefix if present
+        let normalizedPath = context.path;
+        if (this.config.versioning?.enabled && this.config.versioning.versionPrefix && context.version) {
+            const versionPrefix = `/${context.version}`;
+            if (normalizedPath.startsWith(versionPrefix)) {
+                normalizedPath = normalizedPath.substring(versionPrefix.length) || '/';
+            }
+        }
+
+        // If versioning is enabled and version is specified, try version-specific endpoints first
+        if (this.config.versioning?.enabled && context.version && this.mockData.versions) {
+            const versionData = this.mockData.versions[context.version];
+            if (versionData) {
+                // Try exact match in versioned endpoints
+                const exactKey = this.createEndpointKey(context.method, normalizedPath);
+                if (versionData.endpoints[exactKey]) {
+                    return versionData.endpoints[exactKey];
+                }
+
+                // Try pattern matching in versioned endpoints
+                for (const endpoint of Object.values(versionData.endpoints)) {
+                    if (this.matchesPattern(endpoint, { ...context, path: normalizedPath })) {
+                        return endpoint;
+                    }
+                }
+            }
+        }
+
+        // Fall back to non-versioned endpoints
         // Try exact match first
-        const exactKey = this.createEndpointKey(context.method, context.path);
+        const exactKey = this.createEndpointKey(context.method, normalizedPath);
         if (this.mockData.endpoints[exactKey]) {
-            return this.mockData.endpoints[exactKey];
+            const endpoint = this.mockData.endpoints[exactKey];
+            // If endpoint has a version, check if it matches
+            if (endpoint.version && context.version && endpoint.version !== context.version) {
+                return null;
+            }
+            return endpoint;
         }
 
         // Try pattern matching for dynamic routes
-        for (const [, endpoint] of Object.entries(this.mockData.endpoints)) {
-            if (this.matchesPattern(endpoint, context)) {
+        for (const endpoint of Object.values(this.mockData.endpoints)) {
+            // If endpoint has a version, check if it matches
+            if (endpoint.version && context.version && endpoint.version !== context.version) {
+                continue;
+            }
+            if (this.matchesPattern(endpoint, { ...context, path: normalizedPath })) {
                 return endpoint;
             }
         }
@@ -588,22 +761,35 @@ export class MockDataHandler implements IMockDataHandler {
     /**
      * Send 404 response for unknown endpoints
      */
-    private sendNotFoundResponse(res: Response, path: string): void {
-        res.status(404).json({
+    private sendNotFoundResponse(res: Response, path: string, version?: string): void {
+        const errorResponse: any = {
             error: {
                 code: 'ENDPOINT_NOT_FOUND',
                 message: `Mock endpoint not found: ${path}`,
                 timestamp: new Date().toISOString(),
                 availableEndpoints: Object.keys(this.mockData.endpoints)
             }
-        });
+        };
+
+        // Add version information if versioning is enabled
+        if (this.config.versioning?.enabled) {
+            errorResponse.error.requestedVersion = version || 'none';
+            errorResponse.error.availableVersions = this.config.versioning.supportedVersions;
+
+            if (version && this.mockData.versions && this.mockData.versions[version]) {
+                errorResponse.error.availableEndpointsForVersion =
+                    Object.keys(this.mockData.versions[version].endpoints);
+            }
+        }
+
+        res.status(404).json(errorResponse);
     }
 
     /**
      * Load endpoints from JSON files
      */
-    private async loadFromJsonFiles(): Promise<Record<string, MockEndpoint>> {
-        const endpoints: Record<string, MockEndpoint> = {};
+    private async loadFromJsonFiles(): Promise<Record<string, ExtendedMockEndpoint>> {
+        const endpoints: Record<string, ExtendedMockEndpoint> = {};
 
         try {
             const files = await readdir(this.config.dataPath);
@@ -620,9 +806,16 @@ export class MockDataHandler implements IMockDataHandler {
                     continue;
                 }
 
+                // Extract version from file if specified
+                const fileVersion = mockDataFile.version;
+
                 // Process endpoints from file
                 for (const endpointConfig of mockDataFile.endpoints) {
                     const key = this.createEndpointKey(endpointConfig.method, endpointConfig.path);
+
+                    // Use endpoint-specific version, fall back to file version
+                    const version = endpointConfig.version || fileVersion;
+
                     endpoints[key] = {
                         method: endpointConfig.method.toUpperCase(),
                         path: endpointConfig.path,
@@ -630,7 +823,8 @@ export class MockDataHandler implements IMockDataHandler {
                         statusCode: endpointConfig.statusCode || 200,
                         headers: endpointConfig.headers || {},
                         delay: endpointConfig.delay ?? this.config.defaultDelay,
-                        contentType: endpointConfig.contentType || 'json'
+                        contentType: endpointConfig.contentType || 'json',
+                        version: version
                     } as ExtendedMockEndpoint;
                 }
             }

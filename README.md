@@ -11,6 +11,7 @@ A flexible backend server that can act as both a mock data server (similar to js
 - 🔀 **Request/Response Transformation**: Transform data with field mapping, custom functions, and more
 - 🔌 **WebSocket Support**: Real-time mock events and WebSocket proxying
 - 🔮 **GraphQL Support**: Built-in GraphQL endpoint with playground and proxy functionality
+- 📌 **API Versioning**: Support multiple API versions simultaneously with header or URL-based negotiation
 - 🔐 **Flexible Authentication**: JWT, HTTP Basic, dev-token, or bypass modes
 - 🛡️ **Security Controls**: Rate limiting, origin validation, suspicious activity detection
 - 📝 **Request Logging**: Detailed logging with winston
@@ -473,6 +474,43 @@ The server supports powerful data transformation capabilities. See the [Transfor
 - **Response Wrapping**: Wrap responses in standard formats
 
 See [config/transformations.example.ts](config/transformations.example.ts) for more examples.
+
+## API Versioning
+
+The server supports multiple API versions simultaneously, allowing you to test different versions side by side. See the [Versioning Guide](docs/VERSIONING_GUIDE.md) for detailed documentation.
+
+### Quick Example
+
+```bash
+# Enable versioning in .env.local
+VERSIONING_ENABLED=true
+VERSIONING_SUPPORTED_VERSIONS=v1,v2,v3
+VERSIONING_DEFAULT_VERSION=v1
+VERSIONING_HEADER=API-Version
+VERSIONING_PREFIX=true
+```
+
+### Usage
+
+```bash
+# Header-based versioning
+curl -H "API-Version: v1" http://localhost:3000/mock/users
+curl -H "API-Version: v2" http://localhost:3000/mock/users
+
+# URL prefix versioning
+curl http://localhost:3000/mock/v1/users
+curl http://localhost:3000/mock/v2/users
+```
+
+### Features
+
+- **Multiple Versions**: Serve different API versions simultaneously
+- **Version Negotiation**: Support both header and URL-based versioning
+- **Default Version**: Optional default for backward compatibility
+- **Strict Mode**: Require version specification
+- **Version-Specific Data**: Load different mock data per version
+
+See [examples/versioning-example.md](examples/versioning-example.md) for complete examples.
 
 ## API Reference
 
