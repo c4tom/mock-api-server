@@ -83,7 +83,10 @@ open http://localhost:3000/graphql
 
 ## Documentation
 
+- 📇 [Documentation Index](DOCUMENTATION_INDEX.md) - Complete documentation index
 - 📖 [User Guide](USER_GUIDE.md) - Complete usage manual
+- 🎨 [Frontend Guide](FRONTEND_GUIDE.md) - Dashboard, WebSocket client, GraphQL playground
+- ⚡ [Frontend Quick Start](QUICK_START_FRONTEND.md) - Quick access to web interfaces
 - 👨‍💻 [Developer Guide](DEVELOPER_GUIDE.md) - Architecture and development
 - 📚 [Full README](README.md) - Detailed documentation
 - 📁 [docs/](docs/) - Feature-specific guides

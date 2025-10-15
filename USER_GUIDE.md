@@ -698,6 +698,7 @@ DATABASE_TYPE=sqlite
 ### Documentation
 
 - [Full README](README.md) - Complete documentation
+- [Frontend Guide](FRONTEND_GUIDE.md) - Dashboard and web interfaces
 - [Developer Guide](DEVELOPER_GUIDE.md) - Technical details
 - [API Reference](docs/API_REFERENCE.md) - All endpoints
 - [Troubleshooting Guide](docs/TROUBLESHOOTING.md) - Detailed solutions

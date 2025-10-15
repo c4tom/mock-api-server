@@ -860,6 +860,7 @@ logger.error('Error message', error);
 ### Internal Documentation
 
 - [User Guide](USER_GUIDE.md) - User-facing documentation
+- [Frontend Guide](FRONTEND_GUIDE.md) - Web interfaces guide
 - [API Reference](docs/API_REFERENCE.md) - Complete API docs
 - [Feature Guides](docs/) - Detailed feature documentation
 
