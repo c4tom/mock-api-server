@@ -7,7 +7,7 @@ import {
   createTransformationMiddleware
 } from './middleware';
 import { AdminHandler, MockDataHandler, ProxyHandler, WebSocketHandler, GraphQLHandler, DashboardHandler, RecordingHandler } from './handlers';
-import { LoggingService } from './services';
+import { LoggingService, PerformanceMonitoringService } from './services';
 import { AppConfig } from './types';
 import { TransformationConfig } from './types/transformation';
 
@@ -41,6 +41,7 @@ const app: Express = express();
 let config: AppConfig;
 let configManager: ConfigManager;
 let loggingService: LoggingService;
+let performanceMonitoring: PerformanceMonitoringService;
 let adminHandler: AdminHandler;
 let mockDataHandler: MockDataHandler;
 let proxyHandler: ProxyHandler;
@@ -123,6 +124,7 @@ async function initializeApp() {
 
     // Initialize services and handlers
     loggingService = new LoggingService(config.logging);
+    performanceMonitoring = new PerformanceMonitoringService();
     adminHandler = new AdminHandler(configManager, config, loggingService);
     mockDataHandler = new MockDataHandler(config.mock, config.database);
 
@@ -500,6 +502,30 @@ function setupMiddleware() {
     next();
   });
 
+  // Performance monitoring middleware
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const startTime = Date.now();
+
+    res.on('finish', () => {
+      const responseTime = Date.now() - startTime;
+      const record: any = {
+        method: req.method,
+        path: req.path,
+        statusCode: res.statusCode,
+        responseTime,
+        timestamp: startTime
+      };
+
+      if (res.statusCode >= 400 && res.statusMessage) {
+        record.error = res.statusMessage;
+      }
+
+      performanceMonitoring.recordRequest(record);
+    });
+
+    next();
+  });
+
   // Security middleware chain
   app.use(securityMiddleware.handlePreflight);
   app.use(securityMiddleware.validateOrigin);
@@ -674,6 +700,67 @@ function setupRoutes() {
     app.get('/admin/cache/stats', adminAuth, adminHandler.getCacheStats);
     app.post('/admin/cache/clear', adminAuth, adminHandler.clearCache);
     app.post('/admin/cache/invalidate/:routeName', adminAuth, adminHandler.invalidateCacheByRoute);
+
+    // Performance monitoring endpoints
+    app.get('/admin/performance/metrics', adminAuth, (req: Request, res: Response) => {
+      const metrics = performanceMonitoring.getMetrics();
+      res.json({
+        success: true,
+        data: metrics,
+        meta: {
+          timestamp: new Date().toISOString(),
+          requestId: (req as any).requestId
+        }
+      });
+    });
+
+    app.get('/admin/performance/summary', adminAuth, (req: Request, res: Response) => {
+      const summary = performanceMonitoring.getSummary();
+      res.json({
+        success: true,
+        data: summary,
+        meta: {
+          timestamp: new Date().toISOString(),
+          requestId: (req as any).requestId
+        }
+      });
+    });
+
+    app.get('/admin/performance/export/prometheus', adminAuth, (_req: Request, res: Response) => {
+      const prometheusMetrics = performanceMonitoring.exportPrometheus();
+      res.setHeader('Content-Type', 'text/plain; version=0.0.4');
+      res.send(prometheusMetrics);
+    });
+
+    app.get('/admin/performance/export/json', adminAuth, (_req: Request, res: Response) => {
+      const jsonMetrics = performanceMonitoring.exportJSON();
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="metrics-${Date.now()}.json"`);
+      res.send(jsonMetrics);
+    });
+
+    app.get('/admin/performance/export/csv', adminAuth, (_req: Request, res: Response) => {
+      const csvMetrics = performanceMonitoring.exportCSV();
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="metrics-${Date.now()}.csv"`);
+      res.send(csvMetrics);
+    });
+
+    app.post('/admin/performance/reset', adminAuth, (req: Request, res: Response) => {
+      performanceMonitoring.reset();
+      logger.info('Performance metrics reset', {
+        user: (req as any).user?.username || 'admin',
+        timestamp: new Date().toISOString()
+      });
+      res.json({
+        success: true,
+        message: 'Performance metrics reset successfully',
+        meta: {
+          timestamp: new Date().toISOString(),
+          requestId: (req as any).requestId
+        }
+      });
+    });
 
     // Transformation management endpoints
     app.get('/admin/transformations', adminAuth, (req: Request, res: Response) => {
@@ -999,6 +1086,12 @@ async function gracefulShutdown(signal: string): Promise<void> {
         }).catch((err: Error) => {
           logger.error('Error closing database connection', { error: err });
         });
+      }
+
+      // Cleanup performance monitoring
+      if (performanceMonitoring) {
+        logger.info('Cleaning up performance monitoring');
+        performanceMonitoring.destroy();
       }
 
       logger.info('Cleanup completed, exiting process');

@@ -7,6 +7,7 @@ Complete documentation for the Mock API Server.
 - [Main README](../README.md) - Getting started and overview
 - [API Reference](./API_REFERENCE.md) - Complete API documentation
 - [Dashboard Guide](./DASHBOARD_GUIDE.md) - Web-based monitoring and management UI
+- [Performance Monitoring Guide](./PERFORMANCE_MONITORING_GUIDE.md) - Performance metrics and monitoring
 - [Proxy Guide](./PROXY_GUIDE.md) - CORS proxy configuration and usage
 - [Cache Guide](./CACHE_GUIDE.md) - Response caching configuration and usage
 - [Transformation Guide](./TRANSFORMATION_GUIDE.md) - Request/response transformation
@@ -85,6 +86,17 @@ See [Dashboard Guide](./DASHBOARD_GUIDE.md) for:
 - Performance metrics
 - Visual analytics with charts
 - API endpoints for dashboard data
+
+### Performance Monitoring
+
+See [Performance Monitoring Guide](./PERFORMANCE_MONITORING_GUIDE.md) for:
+- Detailed performance metrics
+- Request/response time tracking
+- Memory and CPU usage monitoring
+- Export metrics to Prometheus, JSON, CSV
+- Health checks and issue detection
+- Integration with monitoring tools
+- Performance optimization tips
 
 ### Security
 
