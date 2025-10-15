@@ -527,6 +527,9 @@ function setupMiddleware() {
   });
 
   // Security middleware chain
+  if (!securityMiddleware) {
+    throw new Error('SecurityMiddleware not initialized. Call initializeApp() first.');
+  }
   app.use(securityMiddleware.handlePreflight);
   app.use(securityMiddleware.validateOrigin);
   app.use(securityMiddleware.checkBlockedIPs);

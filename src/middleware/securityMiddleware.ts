@@ -15,6 +15,19 @@ export class SecurityMiddleware implements ISecurityMiddleware {
     private rateLimitMiddleware: RateLimitMiddleware;
 
     constructor(securityConfig: SecurityConfig) {
+        if (!securityConfig) {
+            throw new Error('SecurityConfig is required');
+        }
+        if (!securityConfig.authentication) {
+            throw new Error('SecurityConfig.authentication is required');
+        }
+        if (!securityConfig.cors) {
+            throw new Error('SecurityConfig.cors is required');
+        }
+        if (!securityConfig.rateLimit) {
+            throw new Error('SecurityConfig.rateLimit is required');
+        }
+
         this.authMiddleware = new AuthMiddleware(securityConfig.authentication);
         this.corsMiddleware = new CorsMiddleware(securityConfig.cors);
         this.rateLimitMiddleware = new RateLimitMiddleware(securityConfig.rateLimit);
@@ -44,9 +57,9 @@ export class SecurityMiddleware implements ISecurityMiddleware {
     /**
      * CORS origin validation middleware
      */
-    validateOrigin(req: Request, res: Response, next: NextFunction): void {
+    validateOrigin = (req: Request, res: Response, next: NextFunction): void => {
         return this.corsMiddleware.validateOrigin(req, res, next);
-    }
+    };
 
     /**
      * Handle CORS preflight requests
@@ -58,10 +71,10 @@ export class SecurityMiddleware implements ISecurityMiddleware {
     /**
      * Rate limiting middleware
      */
-    applyRateLimit(req: Request, res: Response, next: NextFunction): void {
+    applyRateLimit = (req: Request, res: Response, next: NextFunction): void => {
         const rateLimiter = this.rateLimitMiddleware.createRateLimiter();
         return rateLimiter(req, res, next);
-    }
+    };
 
     /**
      * IP blocking middleware

@@ -40,3 +40,7 @@ pids/
 *.pid
 *.seed
 *.pid.lock
+
+# data recordings
+
+data/recordings
