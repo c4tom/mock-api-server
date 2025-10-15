@@ -200,7 +200,7 @@ Potential improvements:
 - `src/services/DatabaseService.ts`
 - `docs/DATABASE_GUIDE.md`
 - `examples/database-sqlite-example.md`
-- `DATABASE_IMPLEMENTATION_SUMMARY.md`
+- `docs/DATABASE_IMPLEMENTATION_SUMMARY.md`
 
 ### Modified Files
 - `src/types/config.ts` - Added DatabaseConfig

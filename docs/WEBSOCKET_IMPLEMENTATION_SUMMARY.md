@@ -262,7 +262,7 @@ Potential improvements for future iterations:
 - `docs/WEBSOCKET_GUIDE.md` - Comprehensive documentation
 - `docs/websocket-test-client.html` - Interactive test client
 - `data/websocket-events.json` - Sample mock events
-- `WEBSOCKET_IMPLEMENTATION_SUMMARY.md` - This file
+- `docs/WEBSOCKET_IMPLEMENTATION_SUMMARY.md` - This file
 
 ### Modified
 - `package.json` - Added ws dependencies

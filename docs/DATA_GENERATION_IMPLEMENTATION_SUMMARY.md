@@ -201,7 +201,7 @@ Updated main README.md:
 7. `data/templates/products-generated.json` - Product template
 8. `data/templates/posts-generated.json` - Post template
 9. `examples/data-generation-example.md` - Usage examples
-10. `DATA_GENERATION_IMPLEMENTATION_SUMMARY.md` - This file
+10. `docs/DATA_GENERATION_IMPLEMENTATION_SUMMARY.md` - This file
 
 ### Modified Files (6)
 1. `src/handlers/MockDataHandler.ts` - Integration

@@ -341,7 +341,7 @@ const v2Users = await v2Client.get('/users');
 12. `src/handlers/__tests__/MockDataHandler.versioning.test.ts` - Test suite
 
 ### Summary (1 file)
-13. `API_VERSIONING_IMPLEMENTATION_SUMMARY.md` - This file
+13. `docs/API_VERSIONING_IMPLEMENTATION_SUMMARY.md` - This file
 
 **Total: 13 files created/modified**
 

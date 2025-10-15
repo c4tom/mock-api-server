@@ -14,7 +14,7 @@ Complete documentation for the Mock API Server.
 - [Versioning Guide](./VERSIONING_GUIDE.md) - API versioning support
 - [Security Guide](./SECURITY_GUIDE.md) - Security configuration and best practices
 - [Troubleshooting](./TROUBLESHOOTING.md) - Common issues and solutions
-- [Configuration Examples](../CONFIG_EXAMPLES.md) - Example configurations for different environments
+- [Configuration Examples](./CONFIG_EXAMPLES.md) - Example configurations for different environments
 
 ## Documentation Structure
 
@@ -121,7 +121,7 @@ See [Troubleshooting](./TROUBLESHOOTING.md) for:
 
 ### Configuration
 
-See [Configuration Examples](../CONFIG_EXAMPLES.md) for:
+See [Configuration Examples](./CONFIG_EXAMPLES.md) for:
 - Development configurations
 - Production configurations
 - AI Studio setup
@@ -178,7 +178,7 @@ Key configuration variables:
 | `CORS_ORIGINS` | Allowed origins | `*`, `https://app.com` |
 | `PROXY_ROUTES` | Named proxy routes | `api:https://api.com` |
 
-See [Configuration Examples](../CONFIG_EXAMPLES.md) for complete examples.
+See [Configuration Examples](./CONFIG_EXAMPLES.md) for complete examples.
 
 ### Authentication Quick Setup
 
@@ -259,7 +259,7 @@ For issues and questions:
 When adding new features or configurations:
 
 1. Update relevant documentation
-2. Add examples to [Configuration Examples](../CONFIG_EXAMPLES.md)
+2. Add examples to [Configuration Examples](./CONFIG_EXAMPLES.md)
 3. Update [API Reference](./API_REFERENCE.md) for new endpoints
 4. Add troubleshooting entries if needed
 5. Update this README with new documentation links

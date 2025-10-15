@@ -238,7 +238,7 @@ The implementation includes:
 3. `examples/graphql-client-example.js` - Example client
 4. `data/graphql-schema.graphql` - Sample schema file
 5. `test-graphql.js` - Simple test script
-6. `GRAPHQL_IMPLEMENTATION_SUMMARY.md` - This file
+6. `docs/GRAPHQL_IMPLEMENTATION_SUMMARY.md` - This file
 
 ### Modified Files:
 1. `src/types/config.ts` - Added GraphQLConfig interface

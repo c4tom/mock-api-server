@@ -179,7 +179,7 @@ ConfigManager + LoggingService
 - `src/handlers/__tests__/DashboardHandler.test.ts` - Test suite
 - `docs/DASHBOARD_GUIDE.md` - Complete documentation
 - `examples/dashboard-usage.md` - Usage examples
-- `DASHBOARD_IMPLEMENTATION_SUMMARY.md` - This file
+- `docs/DASHBOARD_IMPLEMENTATION_SUMMARY.md` - This file
 
 ### Modified Files
 - `src/handlers/index.ts` - Added DashboardHandler export

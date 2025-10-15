@@ -69,8 +69,8 @@
 5. `data/websocket-events.json` - Sample mock events
 6. `examples/websocket-client-example.js` - Node.js example (150+ lines)
 7. `examples/README.md` - Examples documentation
-8. `WEBSOCKET_IMPLEMENTATION_SUMMARY.md` - Implementation summary
-9. `WEBSOCKET_CHECKLIST.md` - This checklist
+8. `docs/WEBSOCKET_IMPLEMENTATION_SUMMARY.md` - Implementation summary
+9. `docs/WEBSOCKET_CHECKLIST.md` - This checklist
 
 ### Files Modified (9)
 1. `package.json` - Added ws dependencies

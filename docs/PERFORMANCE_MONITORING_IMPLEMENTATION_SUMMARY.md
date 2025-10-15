@@ -265,7 +265,7 @@ setInterval(monitorPerformance, 30000);
 1. `src/services/PerformanceMonitoringService.ts` - Core service
 2. `src/services/__tests__/PerformanceMonitoringService.test.ts` - Unit tests
 3. `docs/PERFORMANCE_MONITORING_GUIDE.md` - Documentation
-4. `PERFORMANCE_MONITORING_IMPLEMENTATION_SUMMARY.md` - This file
+4. `docs/PERFORMANCE_MONITORING_IMPLEMENTATION_SUMMARY.md` - This file
 
 ### Modified:
 1. `src/index.ts` - Integration and endpoints
