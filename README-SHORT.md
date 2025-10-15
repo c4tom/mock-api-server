@@ -4,6 +4,17 @@ A flexible backend server for mock data and CORS proxy with WebSocket, GraphQL, 
 
 ## Quick Start
 
+### Opção 1: Script Automático (Recomendado)
+```bash
+# Linux/macOS
+./start-all.sh
+
+# Windows
+start-all.bat
+```
+Inicia servidor + abre todos os frontends automaticamente!
+
+### Opção 2: Manual
 ```bash
 # Install
 npm install
@@ -18,6 +29,11 @@ npm run build && npm start
 ```
 
 Server runs on `http://localhost:3000`
+
+**Frontends disponíveis:**
+- 📊 Dashboard: http://localhost:3000/dashboard
+- 🔮 GraphQL: http://localhost:3000/graphql
+- 🔌 WebSocket: docs/websocket-test-client.html
 
 ## Key Features
 
