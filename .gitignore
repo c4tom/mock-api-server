@@ -12,6 +12,8 @@ build/
 .env
 .env.local
 .env.production
+.deploy-config
+DEPLOY_INSTRUCTIONS.md
 .env.development
 
 # Logs
